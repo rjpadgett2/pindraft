@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: pindraft
+  # Read .env from the repo root (bootRun sets workingDir there; in prod the JVM
+  # is launched with the container's env vars already populated, so the file is absent
+  # and `optional:` silently skips it). All ${VAR} placeholders below resolve from the
+  # JVM environment first, then from this imported file.
+  config:
+    import: optional:file:./.env[.properties]
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    # baseline BEFORE V1, so V1+ always run on a pre-populated schema (e.g. Supabase's
+    # public schema, which is non-empty out of the box). Default is 1, which would
+    # cause Flyway to skip V1.
+    baseline-version: 0
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+pindraft:
+  bootstrap:
+    # Disable in production. Allows the very first MILL_ADMIN to be created without auth.
+    enabled: ${PINDRAFT_BOOTSTRAP_ENABLED:true}
+  jwt:
+    secret: ${JWT_SECRET}
+    issuer: ${PINDRAFT_JWT_ISSUER:pindraft-local}
+    access-token-ttl-seconds: 3600
+    refresh-token-ttl-seconds: 7776000   # 90 days
+  cors:
+    # Comma-separated, no spaces. Defaults to the three Angular dev servers.
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201,http://localhost:4202}
+  interop:
+    # Where the customer-portal serves the OAuth consent screen. The /authorize endpoint
+    # 302s the shepherd's browser here with the grant parameters in the query string.
+    consent-url-base: ${PINDRAFT_CONSENT_URL_BASE:http://localhost:4201/oauth/consent}

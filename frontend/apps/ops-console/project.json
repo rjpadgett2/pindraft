@@ -1,0 +1,39 @@
+{
+  "name": "ops-console",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/ops-console/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/ops-console",
+        "index": "apps/ops-console/src/index.html",
+        "browser": "apps/ops-console/src/main.ts",
+        "polyfills": [],
+        "tsConfig": "apps/ops-console/tsconfig.app.json",
+        "assets": ["apps/ops-console/src/favicon.ico", "apps/ops-console/src/assets"],
+        "styles": ["apps/ops-console/src/styles.scss"]
+      },
+      "configurations": {
+        "production": { "budgets": [{ "type": "initial", "maximumWarning": "500kb", "maximumError": "1mb" }] }
+      }
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": { "buildTarget": "ops-console:build", "port": 4200 },
+      "configurations": {
+        "production": { "buildTarget": "ops-console:build:production" }
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": { "configFile": "apps/ops-console/vite.config.ts" }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

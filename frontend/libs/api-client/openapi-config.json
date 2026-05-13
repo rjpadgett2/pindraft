@@ -1,0 +1,13 @@
+{
+  "generatorName": "typescript-angular",
+  "inputSpec": "../../../docs/api-spec.yaml",
+  "outputDir": "src/lib/generated",
+  "additionalProperties": {
+    "ngVersion": "21.0.0",
+    "serviceSuffix": "Service",
+    "apiModulePrefix": "Pindraft",
+    "providedIn": "root",
+    "useSingleRequestParameter": true,
+    "withInterfaces": true
+  }
+}

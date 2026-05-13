@@ -1,0 +1,38 @@
+# Build artifacts
+backend/**/build/
+backend/**/out/
+backend/**/.gradle/
+backend/**/bin/
+*.class
+*.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# Node
+frontend/**/node_modules/
+frontend/**/.nx/
+frontend/**/dist/
+frontend/**/.angular/
+frontend/**/coverage/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+*.env
+*.env.local
+application-local.yml
+application-secrets.yml
+
+# Generated
+frontend/libs/api-client/src/lib/generated/

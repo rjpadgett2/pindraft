@@ -1,0 +1,15 @@
+# OPTIONAL local-dev overlay. Copy to application-local.yml ONLY if you want the
+# extra verbosity. All secrets and connection info now come from <repo>/.env —
+# you do NOT need this file to boot the app.
+#
+# application-local.yml is gitignored.
+
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    co.pindraft: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

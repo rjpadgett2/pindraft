@@ -1,0 +1,446 @@
+openapi: 3.1.0
+info:
+  title: Pindraft × Hirsel Interop API
+  version: 2.0.0
+  description: |
+    The backend-to-backend integration contract between Hirsel (flock management,
+    OAuth client) and Pindraft (mill operations, OAuth authorization + resource server).
+
+    A shepherd grants per-mill consent for Hirsel to push shipment data to Pindraft on
+    their behalf and to receive webhook events back as the lot moves through processing.
+
+    All paths are prefixed with `/api/v1/` in the implementation; OAuth endpoints use
+    `/api/v1/oauth/*` and interop endpoints use `/api/v1/interop/v1/*` (the inner `/v1/`
+    is the interop contract version, independent from the platform API version).
+
+    The JWKS endpoint sits at the canonical well-known location: `/.well-known/jwks.json`.
+
+    Tokens are opaque (`oat_<base64url>` for access, `ort_<base64url>` for refresh),
+    SHA-256 hashed at rest. Webhooks carry an `X-Pindraft-Signature: sha256=<hex>` header
+    computed as HMAC-SHA256 of the request body with the subscription's signing secret.
+
+servers:
+  - url: https://api.pindraft.co
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  /api/v1/oauth/authorize:
+    get:
+      tags: [OAuth]
+      summary: Authorization endpoint
+      description: |
+        OAuth 2.1 authorization code with PKCE. Hirsel redirects the shepherd here to log
+        in and approve the consent grant. Pindraft renders its own consent UI; the
+        shepherd's Pindraft credentials never pass through Hirsel.
+
+        On success, redirects to `redirect_uri` with `?code=<auth_code>&state=<state>`.
+        On denial, redirects with `?error=access_denied&state=<state>`.
+      security: []
+      parameters:
+        - { name: response_type,         in: query, required: true, schema: { type: string, enum: [code] } }
+        - { name: client_id,             in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: redirect_uri,          in: query, required: true, schema: { type: string, format: uri } }
+        - { name: scope,                 in: query, required: true, schema: { type: string, example: "mill:7f2a-4b1e-...:interop" } }
+        - { name: state,                 in: query, required: true, schema: { type: string, description: "CSRF protection; echoed back unchanged" } }
+        - { name: code_challenge,        in: query, required: true, schema: { type: string, description: "Base64URL(SHA256(code_verifier))" } }
+        - { name: code_challenge_method, in: query, required: true, schema: { type: string, enum: [S256] } }
+      responses:
+        '302':
+          description: Redirect to consent UI; ultimately back to `redirect_uri` with code or error
+
+  /api/v1/oauth/token:
+    post:
+      tags: [OAuth]
+      summary: Token endpoint
+      description: |
+        Exchanges an authorization code (with PKCE verifier) for tokens, OR rotates a
+        refresh token. Refresh tokens are single-use; presenting a used refresh token
+        revokes the entire rotation chain.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthorizationCodeGrant'
+                - $ref: '#/components/schemas/RefreshTokenGrant'
+      responses:
+        '200':
+          description: Token pair issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthErrorResponse' }
+
+  /api/v1/oauth/revoke:
+    post:
+      tags: [OAuth]
+      summary: Revoke a token (RFC 7009)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token, client_id]
+              properties:
+                token:           { type: string }
+                token_type_hint: { type: string, enum: [access_token, refresh_token] }
+                client_id:       { type: string, format: uuid }
+                client_secret:   { type: string }
+      responses:
+        '200': { description: Token revoked (or did not exist; RFC 7009 §2.2) }
+
+  /.well-known/jwks.json:
+    get:
+      tags: [OAuth]
+      summary: Public keys for JWT verification
+      description: |
+        RFC 7517 JWK Set. Cache for ~1 hour; multiple keys may be present during rotation.
+      security: []
+      responses:
+        '200':
+          description: JWK Set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kty: { type: string, enum: [RSA] }
+                        use: { type: string, enum: [sig] }
+                        alg: { type: string, enum: [RS256] }
+                        kid: { type: string }
+                        n:   { type: string }
+                        e:   { type: string }
+
+  /api/v1/interop/v1/shipments:
+    post:
+      tags: [Interop]
+      summary: Submit a shipment manifest
+      description: |
+        Hirsel POSTs this when a shepherd ships fiber to the consenting mill. Idempotent
+        on `external_shipment_id` — retrying with the same external ID returns the
+        existing reservation, not a duplicate.
+
+        The mill is encoded in the access token's scope; the shepherd's Pindraft customer
+        is resolved by `(external_source='hirsel', external_customer_id)`. If no match
+        exists, a walk-in customer record is auto-created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShipmentManifest' }
+      responses:
+        '201':
+          description: Shipment accepted, reservation created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShipmentReceipt' }
+        '400':
+          description: Invalid manifest
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '401':
+          description: Missing or invalid token
+
+  /api/v1/tenants/{tenant_id}/oauth-clients:
+    post:
+      tags: [Admin]
+      summary: Register an OAuth client (called by mill admin, not by Hirsel)
+      description: |
+        A mill admin uses this to register Hirsel as a partner. Returns the
+        `client_id` and `client_secret` — the secret is shown only on registration
+        and never readable again. The mill admin shares the credentials with Hirsel
+        out-of-band.
+      parameters:
+        - { name: tenant_id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, redirectUris, pkceRequired]
+              properties:
+                name:          { type: string, example: "Hirsel" }
+                redirectUris:
+                  type: array
+                  items: { type: string, format: uri }
+                  example: ["https://hirsel.app/oauth/callback"]
+                pkceRequired: { type: boolean, example: true }
+      responses:
+        '201':
+          description: Client registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientId:     { type: string, format: uuid }
+                  name:         { type: string }
+                  clientSecret: { type: string, description: "Returned ONCE; not retrievable later" }
+                  pkceRequired: { type: boolean }
+                  createdAt:    { type: string, format: date-time }
+
+webhooks:
+
+  shipment.received_at_mill:
+    post:
+      summary: Fiber arrived at the mill; a reservation became a lot.
+      description: |
+        Fired from inside the intake transaction. The lot is now active and will progress
+        through workflow stages. Use this to mark the shipment as "received" in Hirsel.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        lot_id:           { type: string, format: uuid }
+                        customer_id:      { type: string, format: uuid }
+                        intake_weight_kg: { type: number }
+      responses:
+        '200': { description: Acknowledged }
+
+  lot.stage_transition:
+    post:
+      summary: Lot advanced to a new workflow stage.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        lot_id:          { type: string, format: uuid }
+                        from_stage_type: { type: string, example: "WASH" }
+                        to_stage_type:   { type: string, example: "CARD" }
+                        weight_out_kg:   { type: number }
+      responses:
+        '200': { description: Acknowledged }
+
+  pool.contribution_recorded:
+    post:
+      summary: A shepherd contributed fiber to a wool pool.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        pool_id:               { type: string, format: uuid }
+                        contribution_id:       { type: string, format: uuid }
+                        customer_id:           { type: string, format: uuid }
+                        customer_display_name: { type: string }
+                        weight_kg:             { type: number }
+      responses:
+        '200': { description: Acknowledged }
+
+  pool.settled:
+    post:
+      summary: A wool pool was distributed; shares are computable.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        pool_id:           { type: string, format: uuid }
+                        total_revenue:     { type: number }
+                        contributor_count: { type: integer }
+      responses:
+        '200': { description: Acknowledged }
+
+  listing.published:
+    post:
+      summary: A marketplace listing went live.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        listing_id:    { type: string, format: uuid }
+                        kind:          { type: string, example: "YARN" }
+                        title:         { type: string }
+                        price_per_kg:  { type: number }
+                        quantity_kg:   { type: number }
+                        trace_slug:    { type: string, example: "K9MW3T" }
+      responses:
+        '200': { description: Acknowledged }
+
+  listing.sold:
+    post:
+      summary: A marketplace listing was marked sold.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEnvelope'
+                - type: object
+                  properties:
+                    subject:
+                      type: object
+                      properties:
+                        listing_id:   { type: string, format: uuid }
+                        price_per_kg: { type: number }
+                        quantity_kg:  { type: number }
+      responses:
+        '200': { description: Acknowledged }
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        OAuth access token format: `Bearer oat_<base64url>`. The legacy v1 scheme
+        `Bearer pdt_<client_id>_<secret>` is also accepted for backwards compatibility
+        but should not be used for new integrations.
+
+  schemas:
+
+    AuthorizationCodeGrant:
+      type: object
+      required: [grant_type, code, redirect_uri, client_id, code_verifier]
+      properties:
+        grant_type:    { type: string, enum: [authorization_code] }
+        code:          { type: string }
+        redirect_uri:  { type: string, format: uri }
+        client_id:     { type: string, format: uuid }
+        client_secret: { type: string, description: "Required for confidential clients" }
+        code_verifier: { type: string, minLength: 43, maxLength: 128 }
+
+    RefreshTokenGrant:
+      type: object
+      required: [grant_type, refresh_token, client_id]
+      properties:
+        grant_type:    { type: string, enum: [refresh_token] }
+        refresh_token: { type: string }
+        client_id:     { type: string, format: uuid }
+        client_secret: { type: string }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:  { type: string, example: "oat_abc123..." }
+        token_type:    { type: string, enum: [Bearer] }
+        expires_in:    { type: integer, example: 3600, description: "Access token TTL in seconds" }
+        refresh_token: { type: string, example: "ort_xyz789...", description: "TTL 90 days; single-use" }
+        scope:         { type: string }
+
+    OAuthErrorResponse:
+      type: object
+      description: RFC 6749 §5.2 error response.
+      properties:
+        error:
+          type: string
+          enum: [invalid_request, invalid_client, invalid_grant, unauthorized_client, unsupported_grant_type, invalid_scope]
+        error_description: { type: string, nullable: true }
+
+    ShipmentManifest:
+      type: object
+      required: [externalShipmentId, expectedArrivalDate, shepherd, fleeces]
+      properties:
+        externalShipmentId:
+          type: string
+          description: Hirsel's identifier; idempotency key.
+        expectedArrivalDate:
+          type: string
+          format: date
+        shepherd:
+          $ref: '#/components/schemas/ShepherdInfo'
+        fleeces:
+          type: array
+          items: { $ref: '#/components/schemas/FleeceManifest' }
+          minItems: 1
+
+    ShepherdInfo:
+      type: object
+      required: [externalCustomerId, displayName]
+      properties:
+        externalCustomerId:
+          type: string
+          description: Hirsel's identifier for this shepherd. Used to resolve or auto-create the Pindraft customer.
+        displayName:
+          type: string
+
+    FleeceManifest:
+      type: object
+      required: [externalFleeceId, estimatedGreaseWeightKg]
+      properties:
+        externalFleeceId:        { type: string, description: "Hirsel's identifier for this fleece" }
+        estimatedGreaseWeightKg: { type: number, minimum: 0 }
+        breedCode:               { type: string, example: "ROMNEY", nullable: true }
+        sourceAnimalName:        { type: string, nullable: true }
+
+    ShipmentReceipt:
+      type: object
+      properties:
+        shipmentId:         { type: string, format: uuid, description: "Pindraft reservation ID" }
+        externalShipmentId: { type: string, description: "Echoes what Hirsel sent" }
+        status:             { type: string, enum: [PENDING, RECEIVED, CANCELLED] }
+
+    WebhookEnvelope:
+      type: object
+      required: [event_type, occurred_at, tenant_id, subject]
+      properties:
+        event_type:  { type: string }
+        occurred_at: { type: string, format: date-time }
+        tenant_id:   { type: string, format: uuid }
+        subject:     { type: object, description: "Event-type-specific payload" }
+
+    ProblemDetail:
+      type: object
+      description: RFC 7807 problem-details with Pindraft `code` extension.
+      properties:
+        type:   { type: string, format: uri }
+        title:  { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code:   { type: string }

@@ -1,0 +1,25 @@
+# Local Postgres for development as an alternative to Supabase.
+# Use this if you want a self-contained dev environment without an internet round-trip.
+# Connection: jdbc:postgresql://localhost:5432/pindraft  user: pindraft  password: pindraft
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pindraft-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pindraft
+      POSTGRES_USER: pindraft
+      POSTGRES_PASSWORD: pindraft
+    ports:
+      - "5432:5432"
+    volumes:
+      - pindraft-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pindraft"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pindraft-pg-data:

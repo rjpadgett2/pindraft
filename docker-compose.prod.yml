@@ -1,0 +1,61 @@
+# Production docker-compose.
+#
+# Run: docker compose -f docker-compose.prod.yml up -d
+#
+# Expects a populated .env file alongside this one with:
+#   DATABASE_URL, DATABASE_USER, DATABASE_PASSWORD
+#   JWT_SECRET (long random string)
+#   ALLOWED_ORIGINS (comma-separated, e.g. https://app.pindraft.co,https://portal.pindraft.co)
+#
+# Certbot setup: see DEPLOY.md.
+
+version: '3.9'
+
+services:
+  pindraft-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pindraft/api:latest
+    container_name: pindraft-api
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      PORT: 8080
+    expose:
+      - "8080"
+    networks:
+      - pindraft-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 60s
+      retries: 3
+
+  pindraft-nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    image: pindraft/nginx:latest
+    container_name: pindraft-nginx
+    restart: unless-stopped
+    depends_on:
+      - pindraft-api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    networks:
+      - pindraft-net
+
+networks:
+  pindraft-net:
+    driver: bridge

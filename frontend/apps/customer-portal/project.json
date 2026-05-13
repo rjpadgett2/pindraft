@@ -1,0 +1,35 @@
+{
+  "name": "customer-portal",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/customer-portal/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/customer-portal",
+        "index": "apps/customer-portal/src/index.html",
+        "browser": "apps/customer-portal/src/main.ts",
+        "polyfills": [],
+        "tsConfig": "apps/customer-portal/tsconfig.app.json",
+        "styles": ["apps/customer-portal/src/styles.scss"]
+      },
+      "configurations": {
+        "production": { "budgets": [{ "type": "initial", "maximumWarning": "500kb", "maximumError": "1mb" }] }
+      }
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": { "buildTarget": "customer-portal:build", "port": 4201 },
+      "configurations": {
+        "production": { "buildTarget": "customer-portal:build:production" }
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": { "configFile": "apps/customer-portal/vite.config.ts" }
+    }
+  }
+}

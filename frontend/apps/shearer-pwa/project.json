@@ -1,0 +1,43 @@
+{
+  "name": "shearer-pwa",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/shearer-pwa/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/shearer-pwa",
+        "index": "apps/shearer-pwa/src/index.html",
+        "browser": "apps/shearer-pwa/src/main.ts",
+        "polyfills": [],
+        "tsConfig": "apps/shearer-pwa/tsconfig.app.json",
+        "styles": ["apps/shearer-pwa/src/styles.scss"],
+        "assets": [
+          { "glob": "manifest.webmanifest", "input": "apps/shearer-pwa/src", "output": "/" },
+          { "glob": "sw.js",                "input": "apps/shearer-pwa/src", "output": "/" }
+        ]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            { "type": "initial", "maximumWarning": "500kb", "maximumError": "1mb" }
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": { "buildTarget": "shearer-pwa:build", "port": 4202 },
+      "configurations": {
+        "production": { "buildTarget": "shearer-pwa:build:production" }
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "options": { "configFile": "apps/shearer-pwa/vite.config.ts" }
+    }
+  }
+}

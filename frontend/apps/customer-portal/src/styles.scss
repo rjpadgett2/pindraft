@@ -1,0 +1,29 @@
+@use '@angular/material' as mat;
+
+@include mat.elevation-classes();
+@include mat.app-background();
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #fafafa;
+  color: #1a1a1a;
+}
+* { box-sizing: border-box; }
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.page-title {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+.page-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 24px;
+}

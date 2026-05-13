@@ -1,0 +1,35 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "ES2022",
+    "lib": ["ES2022", "dom"],
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "importHelpers": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@pindraft/api-client": ["libs/api-client/src/index.ts"],
+      "@pindraft/auth": ["libs/auth/src/index.ts"],
+      "@pindraft/ui": ["libs/ui/src/index.ts"],
+      "@pindraft/domain": ["libs/domain/src/index.ts"]
+    }
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  "exclude": ["node_modules", "tmp"]
+}
