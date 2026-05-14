@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, InputComponent } from '@pindraft/ui';
 
 /**
  * Customer-portal login — warm wool-white + terracotta palette. The hero side
@@ -15,7 +13,7 @@ import { AuthService } from '@pindraft/auth';
   selector: 'customer-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, InputComponent],
   template: `
     <div class="cp-login">
       <main class="cp-login__form-wrap">
@@ -24,21 +22,15 @@ import { AuthService } from '@pindraft/auth';
           <h1 class="cp-login__form-title">Welcome back.</h1>
           <p class="cp-login__form-sub">Sign in to see your fiber across the mills you ship to.</p>
           <form [formGroup]="form" (ngSubmit)="submit()" class="cp-login__form">
-            <mat-form-field appearance="outline">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" formControlName="email" autocomplete="email" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" formControlName="password" autocomplete="current-password" />
-            </mat-form-field>
+            <pd-input label="Email" type="email" formControlName="email" autocomplete="email" />
+            <pd-input label="Password" type="password" formControlName="password" autocomplete="current-password" />
             @if (errorMessage()) {
               <p class="cp-login__error">{{ errorMessage() }}</p>
             }
-            <button mat-flat-button color="primary" type="submit" class="cp-login__submit"
+            <pd-button variant="primary" type="submit"
                     [disabled]="form.invalid || loading()">
               {{ loading() ? 'Signing in…' : 'Sign in' }}
-            </button>
+            </pd-button>
           </form>
           <p class="cp-login__signup">
             New to Pindraft? <a routerLink="/register">Create an account</a>
@@ -95,9 +87,10 @@ import { AuthService } from '@pindraft/auth';
       color: var(--pd-color-text-muted);
       font-size: var(--pd-text-md);
     }
-    .cp-login__form { display: flex; flex-direction: column; gap: var(--pd-space-2); }
-    .cp-login__submit { margin-top: var(--pd-space-3); }
-    .cp-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: var(--pd-space-1) 0; }
+    .cp-login__form { display: flex; flex-direction: column; gap: var(--pd-space-4); }
+    .cp-login__form pd-input { display: block; }
+    .cp-login__form pd-button { margin-top: var(--pd-space-2); }
+    .cp-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: 0; }
     .cp-login__signup { font-size: var(--pd-text-sm); color: var(--pd-color-text-muted); margin: var(--pd-space-6) 0 var(--pd-space-2); text-align: center; }
     .cp-login__signup a { color: var(--pd-brand-accent); text-decoration: none; font-weight: var(--pd-weight-medium); }
     .cp-login__browse { font-size: var(--pd-text-sm); margin: 0; text-align: center; }

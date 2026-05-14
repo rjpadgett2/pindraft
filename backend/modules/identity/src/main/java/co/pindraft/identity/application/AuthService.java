@@ -73,6 +73,15 @@ public class AuthService {
         var user = new UserEntity(
             UUID.randomUUID(), email, passwordEncoder.encode(password), name, false, userType);
         users.save(user);
+
+        // Auto-link any walk-in customer records that mills recorded for this email
+        // before the user registered. Keeps the customer-portal /me/lots immediately
+        // populated for a returning shepherd who registered after their first drop-off.
+        // Same-transaction so a partial failure rolls back the user too.
+        var pending = customers.findByEmailIgnoreCaseAndUserIdIsNull(email);
+        for (var c : pending) c.linkToUser(user.getId());
+        if (!pending.isEmpty()) customers.saveAll(pending);
+
         return issueTokens(user);
     }
 
@@ -98,6 +107,12 @@ public class AuthService {
         var user = new UserEntity(
             UUID.randomUUID(), email, passwordEncoder.encode(password), name, false, "MILL_STAFF");
         users.save(user);
+
+        // A mill admin might also be a shepherd at another mill — backfill those
+        // walk-in records so cross-tenant /me/lots works for them too.
+        var pending = customers.findByEmailIgnoreCaseAndUserIdIsNull(email);
+        for (var c : pending) c.linkToUser(user.getId());
+        if (!pending.isEmpty()) customers.saveAll(pending);
 
         var tenant = new TenantEntity(UUID.randomUUID(), millName, TenantKind.MILL);
         // Tenant defaults to SETUP — see TenantStatus; SETUP keeps it out of the

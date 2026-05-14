@@ -1,15 +1,16 @@
 package co.pindraft.identity.api;
 
 import co.pindraft.common.security.TenantContextHolder;
+import co.pindraft.identity.application.CustomerService;
 import co.pindraft.identity.domain.UserEntity;
 import co.pindraft.identity.infrastructure.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/me")
@@ -18,10 +19,16 @@ public class MeController {
 
     private final TenantContextHolder contextHolder;
     private final UserRepository userRepository;
+    private final CustomerService customerService;
 
-    public MeController(TenantContextHolder contextHolder, UserRepository userRepository) {
+    public MeController(
+        TenantContextHolder contextHolder,
+        UserRepository userRepository,
+        CustomerService customerService
+    ) {
         this.contextHolder = contextHolder;
         this.userRepository = userRepository;
+        this.customerService = customerService;
     }
 
     @GetMapping
@@ -44,6 +51,16 @@ public class MeController {
                 .map(c -> new CustomerRelationship(c.tenantId(), c.customerKind())).toList()
         );
     }
+
+    @PostMapping("/claim")
+    @Operation(summary = "Redeem a claim code from a mill to attach an existing customer record to my account")
+    public CustomerService.CustomerView claim(@Valid @RequestBody ClaimRequest req) {
+        var ctx = contextHolder.get();
+        if (!ctx.isAuthenticated()) throw new UnauthenticatedException();
+        return customerService.claimByCode(ctx.userId(), req.code());
+    }
+
+    public record ClaimRequest(@NotBlank String code) {}
 
     public record MeResponse(
         UUID id, String email, String name, boolean isPlatformAdmin,

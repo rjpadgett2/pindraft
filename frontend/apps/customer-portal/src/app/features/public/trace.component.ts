@@ -93,7 +93,7 @@ import { PublicTraceResponse, PublicTraceService } from './services/public-trace
         <main class="tr__main">
           <pd-empty-state
             title="Trace not found"
-            message="This trace ID doesn't exist, or its owner hasn't made it public.">
+            description="This trace ID doesn't exist, or its owner hasn't made it public.">
             <a routerLink="/marketplace" class="tr__cta-primary">Browse the marketplace</a>
           </pd-empty-state>
         </main>

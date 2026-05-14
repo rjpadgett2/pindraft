@@ -20,6 +20,7 @@ import { SnackbarContainerComponent } from '@pindraft/ui';
       <span class="brand">Pindraft</span>
       <nav>
         <a mat-button routerLink="/ops/reservations" routerLinkActive="active">Reservations</a>
+        <a mat-button routerLink="/ops/customers" routerLinkActive="active">Customers</a>
         <a mat-button routerLink="/ops/queues" routerLinkActive="active">Queues</a>
         <a mat-button routerLink="/ops/scan" routerLinkActive="active">Scan</a>
         <a mat-button routerLink="/marketplace/listings" routerLinkActive="active">Listings</a>

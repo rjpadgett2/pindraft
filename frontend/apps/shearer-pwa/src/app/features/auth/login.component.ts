@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, InputComponent } from '@pindraft/ui';
 
 /**
  * Shearer-pwa login — sage palette, mobile-first vertical card. Distinct from
@@ -15,7 +13,7 @@ import { AuthService } from '@pindraft/auth';
   selector: 'shearer-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, InputComponent],
   template: `
     <div class="sh-login">
       <header class="sh-login__top">
@@ -26,21 +24,17 @@ import { AuthService } from '@pindraft/auth';
       <main class="sh-login__form-card">
         <h1 class="sh-login__title">Sign in</h1>
         <form [formGroup]="form" (ngSubmit)="submit()" class="sh-login__form">
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" autocomplete="email" inputmode="email" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Password</mat-label>
-            <input matInput type="password" formControlName="password" autocomplete="current-password" />
-          </mat-form-field>
+          <pd-input label="Email" type="email" formControlName="email"
+                    autocomplete="email" inputmode="email" />
+          <pd-input label="Password" type="password" formControlName="password"
+                    autocomplete="current-password" />
           @if (errorMessage()) {
             <p class="sh-login__error">{{ errorMessage() }}</p>
           }
-          <button mat-flat-button color="primary" type="submit" class="sh-login__submit"
+          <pd-button variant="primary" type="submit"
                   [disabled]="form.invalid || loading()">
             {{ loading() ? 'Signing in…' : 'Sign in' }}
-          </button>
+          </pd-button>
         </form>
         <p class="sh-login__signup">
           New to Pindraft? <a routerLink="/register">Sign up as a shearer →</a>
@@ -107,9 +101,10 @@ import { AuthService } from '@pindraft/auth';
       font-weight: var(--pd-weight-semibold);
       color: var(--pd-color-text);
     }
-    .sh-login__form { display: flex; flex-direction: column; gap: var(--pd-space-2); }
-    .sh-login__submit { margin-top: var(--pd-space-3); }
-    .sh-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: var(--pd-space-1) 0; }
+    .sh-login__form { display: flex; flex-direction: column; gap: var(--pd-space-4); }
+    .sh-login__form pd-input { display: block; }
+    .sh-login__form pd-button { margin-top: var(--pd-space-2); }
+    .sh-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: 0; }
     .sh-login__signup { font-size: var(--pd-text-sm); color: var(--pd-color-text-muted); margin: var(--pd-space-5) 0 0; text-align: center; }
     .sh-login__signup a { color: var(--pd-brand-accent); text-decoration: none; font-weight: var(--pd-weight-medium); }
     .sh-login__footer {

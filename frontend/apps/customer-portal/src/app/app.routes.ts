@@ -79,6 +79,11 @@ export const appRoutes: Routes = [
         loadComponent: () =>
           import('./features/pools/my-pools.component').then((m) => m.MyPoolsComponent),
       },
+      {
+        path: 'claim',
+        loadComponent: () =>
+          import('./features/claim/claim.component').then((m) => m.ClaimComponent),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'lots' },
     ],
   },

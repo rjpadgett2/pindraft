@@ -20,4 +20,17 @@ public interface TenantCustomerRepository extends JpaRepository<TenantCustomerEn
      */
     Optional<TenantCustomerEntity> findByTenantIdAndExternalSourceAndExternalUserId(
         UUID tenantId, String externalSource, String externalUserId);
+
+    /**
+     * Unlinked walk-in records whose email matches the given address. Used by the
+     * auto-link pass at user registration to backfill {@code user_id} for any
+     * walk-ins a mill recorded with this address before the user signed up.
+     */
+    List<TenantCustomerEntity> findByEmailIgnoreCaseAndUserIdIsNull(String email);
+
+    /** Single user lookup for the operator-side "what's already known about this user" view. */
+    Optional<TenantCustomerEntity> findByTenantIdAndUserId(UUID tenantId, UUID userId);
+
+    /** Claim-code redemption lookup. The index on {@code claim_code} keeps this O(1). */
+    Optional<TenantCustomerEntity> findByClaimCode(String claimCode);
 }

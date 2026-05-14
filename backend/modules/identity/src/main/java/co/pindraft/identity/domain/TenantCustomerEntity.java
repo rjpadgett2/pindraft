@@ -52,6 +52,19 @@ public class TenantCustomerEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /**
+     * Short alphanumeric code (8 chars) the customer types to claim this record
+     * from the customer-portal. Operator generates it; customer redeems it. Cleared
+     * on successful claim. See V17 migration.
+     */
+    @Column(name = "claim_code")
+    @Nullable
+    private String claimCode;
+
+    @Column(name = "claim_code_expires_at")
+    @Nullable
+    private Instant claimCodeExpiresAt;
+
     protected TenantCustomerEntity() {}
 
     /** Walk-in customer constructor. */
@@ -82,4 +95,32 @@ public class TenantCustomerEntity {
     @Nullable public String getExternalSource() { return externalSource; }
     @Nullable public String getExternalUserId() { return externalUserId; }
     public Instant getCreatedAt() { return createdAt; }
+    @Nullable public String getClaimCode() { return claimCode; }
+    @Nullable public Instant getClaimCodeExpiresAt() { return claimCodeExpiresAt; }
+
+    /** Attach a user account to this customer record. Idempotent for same user. */
+    public void linkToUser(UUID userId) {
+        this.userId = userId;
+        // Clear any outstanding claim code — the link is now established.
+        this.claimCode = null;
+        this.claimCodeExpiresAt = null;
+    }
+
+    /** Detach the user — for operator correction of a mistaken link. */
+    public void unlinkUser() {
+        this.userId = null;
+    }
+
+    /** Issue a fresh claim code valid for the given duration. */
+    public void issueClaimCode(String code, Instant expiresAt) {
+        if (this.userId != null) {
+            throw new IllegalStateException("Customer already linked to a user");
+        }
+        this.claimCode = code;
+        this.claimCodeExpiresAt = expiresAt;
+    }
+
+    public boolean hasActiveClaimCode(Instant now) {
+        return claimCode != null && claimCodeExpiresAt != null && claimCodeExpiresAt.isAfter(now);
+    }
 }

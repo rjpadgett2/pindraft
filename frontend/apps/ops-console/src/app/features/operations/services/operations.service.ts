@@ -13,6 +13,7 @@ export interface OptimizerEntry {
 }
 
 import {
+  ClaimCodeIssued,
   CreateCustomerRequest,
   CreateReservationRequest,
   Customer,
@@ -26,7 +27,9 @@ import {
   ReservationStatus,
   StageQueueSummary,
   TransitionWithEquipmentRequest,
+  UserLookupResult,
 } from '@pindraft/api-client';
+import { catchError, of } from 'rxjs';
 import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -39,6 +42,23 @@ export class OperationsService {
   }
   createCustomer(tenantId: string, req: CreateCustomerRequest): Observable<Customer> {
     return this.http.post<Customer>(`/api/v1/tenants/${tenantId}/customers`, req);
+  }
+  /** Lookup a Pindraft user by email to link to a walk-in customer. Resolves to `null` on 404. */
+  userLookup(tenantId: string, email: string): Observable<UserLookupResult | null> {
+    let params = new HttpParams().set('email', email);
+    return this.http.get<UserLookupResult>(`/api/v1/tenants/${tenantId}/customers/user-lookup`, { params })
+      .pipe(catchError(() => of(null)));
+  }
+  linkCustomerToUser(tenantId: string, customerId: string, userId: string): Observable<Customer> {
+    return this.http.post<Customer>(
+      `/api/v1/tenants/${tenantId}/customers/${customerId}/link`, { userId });
+  }
+  unlinkCustomer(tenantId: string, customerId: string): Observable<Customer> {
+    return this.http.delete<Customer>(`/api/v1/tenants/${tenantId}/customers/${customerId}/link`);
+  }
+  issueClaimCode(tenantId: string, customerId: string): Observable<ClaimCodeIssued> {
+    return this.http.post<ClaimCodeIssued>(
+      `/api/v1/tenants/${tenantId}/customers/${customerId}/claim-code`, {});
   }
 
   // Reservations

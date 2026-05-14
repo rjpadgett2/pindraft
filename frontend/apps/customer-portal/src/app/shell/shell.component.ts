@@ -23,6 +23,7 @@ import { SnackbarContainerComponent } from '@pindraft/ui';
         <a mat-button routerLink="/pools" routerLinkActive="active">My pools</a>
         <a mat-button routerLink="/marketplace">Marketplace</a>
         <a mat-button routerLink="/mills">Mills</a>
+        <a mat-button routerLink="/claim" routerLinkActive="active">Connect mill</a>
       </nav>
       <span class="spacer"></span>
       <span class="operator">{{ name() }}</span>

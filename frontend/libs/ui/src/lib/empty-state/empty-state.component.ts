@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  * Usage:
  *   <pd-empty-state
  *     title="No invoices yet"
- *     message="Complete a lot to auto-generate the first one.">
+ *     description="Complete a lot to auto-generate the first one.">
  *     <a mat-stroked-button routerLink="/ops/lots">Go to lots</a>
  *   </pd-empty-state>
  *
@@ -23,8 +23,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   template: `
     <div class="pd-empty">
       <h3 class="pd-empty__title">{{ title() }}</h3>
-      @if (message()) {
-        <p class="pd-empty__message">{{ message() }}</p>
+      @if (description()) {
+        <p class="pd-empty__description">{{ description() }}</p>
       }
       <div class="pd-empty__actions">
         <ng-content />
@@ -47,7 +47,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       font-weight: var(--pd-weight-medium);
       color: var(--pd-color-text);
     }
-    .pd-empty__message {
+    .pd-empty__description {
       margin: var(--pd-space-2) auto 0;
       max-width: 48ch;
       font-size: var(--pd-text-sm);
@@ -65,5 +65,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class EmptyStateComponent {
   readonly title = input.required<string>();
-  readonly message = input<string | null>(null);
+  readonly description = input<string | null>(null);
 }

@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ListingServiceTest {
 
     @Mock private ListingRepository repo;
+    @Mock private ApplicationEventPublisher events;
     private ListingService service;
 
     private UUID tenantId;
@@ -29,7 +31,7 @@ class ListingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ListingService(repo);
+        service = new ListingService(repo, events);
         tenantId = UUID.randomUUID();
         listingId = UUID.randomUUID();
     }

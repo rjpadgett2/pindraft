@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,8 +81,9 @@ class TraceServiceTest {
 
         assertThat(openSegment.getExitedAt()).isNotNull();
         assertThat(openSegment.getWeightOutKg()).isEqualByComparingTo("12.2");
+        // Two saves total: the closed old segment, then the freshly-opened next one.
         verify(segments).save(openSegment);
-        verify(segments).save(any(TraceSegmentEntity.class));  // new segment
+        verify(segments, times(2)).save(any(TraceSegmentEntity.class));
     }
 
     @Test

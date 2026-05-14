@@ -102,7 +102,7 @@ import { OperationsService } from './services/operations.service';
           @if (fiberTests().length === 0) {
             <pd-empty-state
               title="No tests attached yet"
-              message="Record micron, comfort factor, or staple length here. Results show up in the shepherd's lifetime micron view." />
+              description="Record micron, comfort factor, or staple length here. Results show up in the shepherd's lifetime micron view." />
           } @else {
             <ul class="list">
               @for (t of fiberTests(); track t.id) {

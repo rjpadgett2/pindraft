@@ -49,6 +49,7 @@ export const appRoutes: Routes = [
           { path: 'reservations/new', loadComponent: () => import('./features/operations/new-reservation.component').then((m) => m.NewReservationComponent) },
           { path: 'reservations/:id/intake', loadComponent: () => import('./features/operations/intake-processing.component').then((m) => m.IntakeProcessingComponent) },
           { path: 'walk-in-intake', loadComponent: () => import('./features/operations/walk-in-intake.component').then((m) => m.WalkInIntakeComponent) },
+          { path: 'customers', loadComponent: () => import('./features/operations/customers-list.component').then((m) => m.CustomersListComponent) },
           { path: 'lots/:id', loadComponent: () => import('./features/operations/lot-detail.component').then((m) => m.LotDetailComponent) },
           { path: 'queues', loadComponent: () => import('./features/operations/queue-dashboard.component').then((m) => m.QueueDashboardComponent) },
           { path: 'scan', loadComponent: () => import('./features/operations/scan-station.component').then((m) => m.ScanStationComponent) },

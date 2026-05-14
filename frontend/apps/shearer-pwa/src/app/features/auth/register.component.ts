@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, InputComponent } from '@pindraft/ui';
 
 /**
  * Shearer registration. Backend sets userType=SHEARER server-side via the
@@ -14,7 +12,7 @@ import { AuthService } from '@pindraft/auth';
   selector: 'shearer-register',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, InputComponent],
   template: `
     <div class="sh-register">
       <header class="sh-register__top">
@@ -25,25 +23,18 @@ import { AuthService } from '@pindraft/auth';
       <main class="sh-register__form-card">
         <h1 class="sh-register__title">Create your shearer account</h1>
         <form [formGroup]="form" (ngSubmit)="submit()" class="sh-register__form">
-          <mat-form-field appearance="outline">
-            <mat-label>Your name</mat-label>
-            <input matInput formControlName="name" autocomplete="name" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" autocomplete="email" inputmode="email" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Password (8+ characters)</mat-label>
-            <input matInput type="password" formControlName="password" autocomplete="new-password" />
-          </mat-form-field>
+          <pd-input label="Your name" formControlName="name" autocomplete="name" />
+          <pd-input label="Email" type="email" formControlName="email"
+                    autocomplete="email" inputmode="email" />
+          <pd-input label="Password (8+ characters)" type="password"
+                    formControlName="password" autocomplete="new-password" />
           @if (errorMessage()) {
             <p class="sh-register__error">{{ errorMessage() }}</p>
           }
-          <button mat-flat-button color="primary" type="submit" class="sh-register__submit"
+          <pd-button variant="primary" type="submit"
                   [disabled]="form.invalid || loading()">
             {{ loading() ? 'Creating account…' : 'Create account' }}
-          </button>
+          </pd-button>
         </form>
         <p class="sh-register__signin">
           Already have an account? <a routerLink="/login">Sign in</a>
@@ -102,9 +93,10 @@ import { AuthService } from '@pindraft/auth';
       font-weight: var(--pd-weight-semibold);
       color: var(--pd-color-text);
     }
-    .sh-register__form { display: flex; flex-direction: column; gap: var(--pd-space-2); }
-    .sh-register__submit { margin-top: var(--pd-space-3); }
-    .sh-register__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: var(--pd-space-1) 0; }
+    .sh-register__form { display: flex; flex-direction: column; gap: var(--pd-space-4); }
+    .sh-register__form pd-input { display: block; }
+    .sh-register__form pd-button { margin-top: var(--pd-space-2); }
+    .sh-register__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: 0; }
     .sh-register__signin { font-size: var(--pd-text-sm); color: var(--pd-color-text-muted); margin: var(--pd-space-5) 0 0; text-align: center; }
     .sh-register__signin a { color: var(--pd-brand-accent); text-decoration: none; font-weight: var(--pd-weight-medium); }
     .sh-register__footer {

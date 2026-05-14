@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, InputComponent } from '@pindraft/ui';
 
 /**
  * Ops console login. Two-column "industrial" treatment with slate-blue brand
@@ -16,7 +14,7 @@ import { AuthService } from '@pindraft/auth';
   selector: 'ops-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, InputComponent],
   template: `
     <div class="ops-login">
       <aside class="ops-login__hero">
@@ -36,21 +34,15 @@ import { AuthService } from '@pindraft/auth';
           <h2 class="ops-login__form-title">Sign in</h2>
           <p class="ops-login__form-sub">Access your mill's operations console.</p>
           <form [formGroup]="form" (ngSubmit)="submit()" class="ops-login__form">
-            <mat-form-field appearance="outline">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" formControlName="email" autocomplete="email" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" formControlName="password" autocomplete="current-password" />
-            </mat-form-field>
+            <pd-input label="Email" type="email" formControlName="email" autocomplete="email" />
+            <pd-input label="Password" type="password" formControlName="password" autocomplete="current-password" />
             @if (errorMessage()) {
               <p class="ops-login__error">{{ errorMessage() }}</p>
             }
-            <button mat-flat-button color="primary" type="submit" class="ops-login__submit"
+            <pd-button variant="primary" type="submit"
                     [disabled]="form.invalid || loading()">
               {{ loading() ? 'Signing in…' : 'Sign in' }}
-            </button>
+            </pd-button>
           </form>
           <div class="ops-login__sep"></div>
           <p class="ops-login__signup">
@@ -107,9 +99,10 @@ import { AuthService } from '@pindraft/auth';
     .ops-login__form-card { width: 100%; max-width: 420px; }
     .ops-login__form-title { margin: 0; font-size: var(--pd-text-2xl); line-height: var(--pd-leading-2xl); font-weight: var(--pd-weight-semibold); color: var(--pd-color-text); letter-spacing: -0.01em; }
     .ops-login__form-sub { margin: var(--pd-space-1) 0 var(--pd-space-6); color: var(--pd-color-text-muted); font-size: var(--pd-text-base); }
-    .ops-login__form { display: flex; flex-direction: column; gap: var(--pd-space-2); }
-    .ops-login__submit { margin-top: var(--pd-space-3); }
-    .ops-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: var(--pd-space-1) 0 var(--pd-space-2); }
+    .ops-login__form { display: flex; flex-direction: column; gap: var(--pd-space-4); }
+    .ops-login__form pd-input { display: block; }
+    .ops-login__form pd-button { margin-top: var(--pd-space-2); }
+    .ops-login__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: 0; }
     .ops-login__sep { height: 1px; background: var(--pd-color-border); margin: var(--pd-space-6) 0 var(--pd-space-4); }
     .ops-login__signup { font-size: var(--pd-text-sm); color: var(--pd-color-text-muted); margin: 0; text-align: center; }
     .ops-login__signup a { color: var(--pd-brand-accent); text-decoration: none; font-weight: var(--pd-weight-medium); }

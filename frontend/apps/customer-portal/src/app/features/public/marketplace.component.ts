@@ -40,7 +40,7 @@ import { PublicHeaderComponent } from './public-header.component';
         @if (listings().length === 0) {
           <pd-empty-state
             title="No listings match that filter"
-            message="Try a different fiber kind or browse all listings.">
+            description="Try a different fiber kind or browse all listings.">
             <pd-button variant="secondary" (click)="filter(null)">View all</pd-button>
           </pd-empty-state>
         } @else {

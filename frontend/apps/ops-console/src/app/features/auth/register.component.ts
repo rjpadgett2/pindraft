@@ -1,11 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, CheckboxComponent, InputComponent } from '@pindraft/ui';
 
 /**
  * Self-service mill registration. Calls /auth/register-mill which creates
@@ -19,7 +16,7 @@ import { AuthService } from '@pindraft/auth';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule, RouterLink,
-    MatFormFieldModule, MatInputModule, MatButtonModule, MatCheckboxModule,
+    ButtonComponent, CheckboxComponent, InputComponent,
   ],
   template: `
     <div class="ops-register">
@@ -40,32 +37,20 @@ import { AuthService } from '@pindraft/auth';
           <h2 class="ops-register__form-title">Create your mill</h2>
           <p class="ops-register__form-sub">You'll land on the setup hub. The mill won't be visible in the public directory until you've finished onboarding.</p>
           <form [formGroup]="form" (ngSubmit)="submit()" class="ops-register__form">
-            <mat-form-field appearance="outline">
-              <mat-label>Mill name</mat-label>
-              <input matInput formControlName="millName" autocomplete="organization" placeholder="Sturnella Farm Mill" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Your name</mat-label>
-              <input matInput formControlName="name" autocomplete="name" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" formControlName="email" autocomplete="email" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Password (8+ characters)</mat-label>
-              <input matInput type="password" formControlName="password" autocomplete="new-password" />
-            </mat-form-field>
-            <mat-checkbox formControlName="terms" class="ops-register__terms">
+            <pd-input label="Mill name" formControlName="millName" autocomplete="organization" />
+            <pd-input label="Your name" formControlName="name" autocomplete="name" />
+            <pd-input label="Email" type="email" formControlName="email" autocomplete="email" />
+            <pd-input label="Password (8+ characters)" type="password" formControlName="password" autocomplete="new-password" />
+            <pd-checkbox formControlName="terms" class="ops-register__terms">
               I agree to the Pindraft terms of service
-            </mat-checkbox>
+            </pd-checkbox>
             @if (errorMessage()) {
               <p class="ops-register__error">{{ errorMessage() }}</p>
             }
-            <button mat-flat-button color="primary" type="submit" class="ops-register__submit"
+            <pd-button variant="primary" type="submit"
                     [disabled]="form.invalid || loading()">
               {{ loading() ? 'Creating…' : 'Create mill & sign in' }}
-            </button>
+            </pd-button>
           </form>
           <p class="ops-register__signin">
             Already have an account? <a routerLink="/login">Sign in</a>
@@ -105,10 +90,11 @@ import { AuthService } from '@pindraft/auth';
     .ops-register__form-card { width: 100%; max-width: 460px; }
     .ops-register__form-title { margin: 0; font-size: var(--pd-text-2xl); line-height: var(--pd-leading-2xl); font-weight: var(--pd-weight-semibold); color: var(--pd-color-text); letter-spacing: -0.01em; }
     .ops-register__form-sub { margin: var(--pd-space-1) 0 var(--pd-space-6); color: var(--pd-color-text-muted); font-size: var(--pd-text-base); }
-    .ops-register__form { display: flex; flex-direction: column; gap: var(--pd-space-2); }
+    .ops-register__form { display: flex; flex-direction: column; gap: var(--pd-space-4); }
+    .ops-register__form pd-input { display: block; }
+    .ops-register__form pd-button { margin-top: var(--pd-space-2); }
     .ops-register__terms { margin: var(--pd-space-2) 0; }
-    .ops-register__submit { margin-top: var(--pd-space-3); }
-    .ops-register__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: var(--pd-space-1) 0; }
+    .ops-register__error { color: var(--pd-red-700); font-size: var(--pd-text-sm); margin: 0; }
     .ops-register__signin { margin: var(--pd-space-6) 0 0; font-size: var(--pd-text-sm); color: var(--pd-color-text-muted); text-align: center; }
     .ops-register__signin a { color: var(--pd-brand-accent); text-decoration: none; font-weight: var(--pd-weight-medium); }
     @media (max-width: 880px) {

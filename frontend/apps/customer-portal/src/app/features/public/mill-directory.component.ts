@@ -33,7 +33,7 @@ import { PublicHeaderComponent } from './public-header.component';
         @if (mills().length === 0) {
           <pd-empty-state
             title="No mills active yet"
-            message="Pindraft is just getting started. Mills appear here once they've gone live with their first lot." />
+            description="Pindraft is just getting started. Mills appear here once they've gone live with their first lot." />
         } @else {
           <div class="md-grid">
             @for (m of mills(); track m.id) {
