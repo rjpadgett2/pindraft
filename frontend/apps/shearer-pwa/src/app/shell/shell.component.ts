@@ -4,13 +4,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { SnackbarContainerComponent } from '@pindraft/ui';
 import { SyncService } from '../core/sync.service';
 
 @Component({
   selector: 'shearer-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, MatToolbarModule, MatButtonModule, MatIconModule],
+  imports: [RouterOutlet, MatToolbarModule, MatButtonModule, MatIconModule, SnackbarContainerComponent],
   template: `
     <mat-toolbar class="top">
       <span class="brand">Shearer</span>
@@ -26,6 +27,7 @@ import { SyncService } from '../core/sync.service';
       </button>
     </mat-toolbar>
     <main><router-outlet /></main>
+    <pd-snackbar-container />
   `,
   styles: [`
     .top { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #1a1a1a; color: white; }

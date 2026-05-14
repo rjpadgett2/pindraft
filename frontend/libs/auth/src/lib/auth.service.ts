@@ -55,13 +55,34 @@ export class AuthService {
   }
 
   /**
-   * Public registration — creates a user with no tenant relationships and
-   * auto-issues tokens. Used by the customer-portal sign-up page. New mill setup
-   * is a separate flow.
+   * Generic registration — creates a user with no tenant relationships and
+   * auto-issues tokens. Used by the customer-portal sign-up page. {@code userType}
+   * is optional and informational (SHEPHERD / DESIGNER).
    */
-  register(email: string, password: string, name: string): Observable<TokenResponse> {
+  register(email: string, password: string, name: string, userType?: string): Observable<TokenResponse> {
     return this.http
-      .post<TokenResponse>(`${this.apiBase}/auth/register`, { email, password, name })
+      .post<TokenResponse>(`${this.apiBase}/auth/register`, { email, password, name, userType })
+      .pipe(tap((tokens) => this.handleTokenResponse(tokens)));
+  }
+
+  /**
+   * Self-service mill registration — creates user + tenant + MILL_ADMIN
+   * membership atomically. Used by ops-console signup. Tenant starts in SETUP.
+   */
+  registerMill(email: string, password: string, name: string, millName: string)
+    : Observable<{ userId: string; tenantId: string; accessToken: string; refreshToken: string }> {
+    return this.http
+      .post<{ userId: string; tenantId: string; accessToken: string; refreshToken: string }>(
+        `${this.apiBase}/auth/register-mill`, { email, password, name, millName })
+      .pipe(tap((res) => this.handleTokenResponse({
+        accessToken: res.accessToken, refreshToken: res.refreshToken,
+      })));
+  }
+
+  /** Shearer registration — sets userType=SHEARER server-side. */
+  registerShearer(email: string, password: string, name: string): Observable<TokenResponse> {
+    return this.http
+      .post<TokenResponse>(`${this.apiBase}/auth/register-shearer`, { email, password, name })
       .pipe(tap((tokens) => this.handleTokenResponse(tokens)));
   }
 

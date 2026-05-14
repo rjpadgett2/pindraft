@@ -34,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class AuthServiceTest {
 
     @Mock private UserRepository users;
+    @Mock private co.pindraft.identity.infrastructure.TenantRepository tenants;
     @Mock private TenantMembershipRepository memberships;
     @Mock private TenantCustomerRepository customers;
     @Mock private RefreshTokenRepository refreshTokens;
@@ -45,7 +46,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(
-            users, memberships, customers, refreshTokens,
+            users, tenants, memberships, customers, refreshTokens,
             passwordEncoder, jwtService, 86400L);
     }
 

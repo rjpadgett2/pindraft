@@ -1,1 +1,2 @@
 - [Frontend design pass deferred](design-pass-deferred.md) — styling/design system is a deliberate follow-up; ship features first
+- [Material 21 requires mat.theme()](material-21-theme-required.md) — blank-page gotcha; first thing to check on render issues

@@ -11,7 +11,9 @@ import co.pindraft.identity.domain.TenantCustomerEntity;
 import co.pindraft.identity.infrastructure.TenantCustomerRepository;
 import co.pindraft.mill_ops.domain.*;
 import co.pindraft.mill_ops.infrastructure.*;
+import co.pindraft.pools.PoolReader;
 import co.pindraft.traceability.TraceEmitter;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -31,10 +33,13 @@ class LotServiceTest {
     @Mock private LotStageEventRepository stageEvents;
     @Mock private IntakeFleeceRepository intakeFleeces;
     @Mock private ScanEventRepository scanEvents;
+    @Mock private LotLineageRepository lineage;
     @Mock private PricingArrangementLookup pricingLookup;
     @Mock private EquipmentRunService equipmentRunService;
     @Mock private TenantCustomerRepository customers;
     @Mock private TraceEmitter traceEmitter;
+    @Mock private PoolReader poolReader;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private LotService service;
 
@@ -54,8 +59,8 @@ class LotServiceTest {
     void setUp() {
         service = new LotService(
             lots, reservations, workflowStages, stageEvents,
-            intakeFleeces, scanEvents, pricingLookup, equipmentRunService,
-            customers, traceEmitter);
+            intakeFleeces, scanEvents, lineage, pricingLookup, equipmentRunService,
+            customers, traceEmitter, poolReader, eventPublisher);
 
         tenantId = UUID.randomUUID();
         reservationId = UUID.randomUUID();
@@ -86,7 +91,7 @@ class LotServiceTest {
             new LotService.FleeceInput(new BigDecimal("4.0"), "Bramble", "ROMNEY", null),
             new LotService.FleeceInput(new BigDecimal("3.8"), "Hawthorn", "ROMNEY", null));
 
-        var lot = service.intake(tenantId, reservationId, fleeces, null);
+        var lot = service.intake(tenantId, reservationId, fleeces, null, null);
 
         assertThat(lot.getWeightIntakeKg()).isEqualByComparingTo("7.8");
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RECEIVED);

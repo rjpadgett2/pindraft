@@ -1,15 +1,13 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Customer, Reservation } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
+} from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OperationsService } from './services/operations.service';
-import { DatePipe } from '@angular/common';
 
 /**
  * Reservations dashboard — the operator's daily landing surface. Lists upcoming and
@@ -23,94 +21,80 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
-    MatTableModule, MatButtonModule, MatChipsModule, MatIconModule, DatePipe
+    RouterLink, DatePipe,
+    ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
   ],
   template: `
     <div class="page">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">Reservations</h1>
-          <p class="page-subtitle">Upcoming bookings and pending intakes.</p>
-        </div>
-        <div class="header-actions">
-          <button mat-stroked-button routerLink="/ops/walk-in-intake">
-            Walk-in intake
-          </button>
-          <button mat-flat-button color="primary" routerLink="/ops/reservations/new">
-            + New reservation
-          </button>
-        </div>
-      </header>
+      <pd-page-header
+        title="Reservations"
+        subtitle="Upcoming bookings and pending intakes.">
+        <pd-button variant="secondary" routerLink="/ops/walk-in-intake">Walk-in intake</pd-button>
+        <pd-button variant="primary" routerLink="/ops/reservations/new">+ New reservation</pd-button>
+      </pd-page-header>
 
       @if (!loading()) {
         @if (reservations().length === 0) {
-          <div class="empty">
-            No reservations yet. Create one to start receiving fiber.
-          </div>
+          <pd-empty-state
+            title="No reservations yet"
+            description="Create one to start receiving fiber." />
         } @else {
-          <table mat-table [dataSource]="reservations()">
-            <ng-container matColumnDef="customer">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
-              <td mat-cell *matCellDef="let r">{{ customerName(r.customerId) }}</td>
-            </ng-container>
-            <ng-container matColumnDef="slot">
-              <th mat-header-cell *matHeaderCellDef>Slot</th>
-              <td mat-cell *matCellDef="let r">{{ r.slotStart | date:'mediumDate' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="weight">
-              <th mat-header-cell *matHeaderCellDef>Expected</th>
-              <td mat-cell *matCellDef="let r">{{ r.expectedWeightKg }} kg</td>
-            </ng-container>
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let r">
-                <span class="status" [class]="r.status">{{ r.status }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="source">
-              <th mat-header-cell *matHeaderCellDef>Source</th>
-              <td mat-cell *matCellDef="let r">
-                @if (r.externalSource === 'hirsel') {
-                  <span class="chip-hirsel">Hirsel</span>
-                } @else {
-                  <span class="chip-walkin">Manual</span>
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let r">
-                @if (r.status === 'PENDING') {
-                  <a mat-stroked-button [routerLink]="['/ops/reservations', r.id, 'intake']">
-                    Receive fiber
-                  </a>
-                } @else if (r.status === 'RECEIVED') {
-                  <span class="received-tag">Lot created</span>
-                }
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="cols"></tr>
-            <tr mat-row *matRowDef="let row; columns: cols"></tr>
-          </table>
+          <pd-table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Slot</th>
+                <th class="pd-table__num">Expected</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of reservations(); track r.id) {
+                <tr>
+                  <td>{{ customerName(r.customerId) }}</td>
+                  <td>{{ r.slotStart | date:'mediumDate' }}</td>
+                  <td class="pd-table__num">{{ r.expectedWeightKg }} kg</td>
+                  <td><span class="status" [class]="r.status">{{ r.status }}</span></td>
+                  <td>
+                    @if (r.externalSource === 'hirsel') {
+                      <span class="chip-hirsel">Hirsel</span>
+                    } @else {
+                      <span class="chip-walkin">Manual</span>
+                    }
+                  </td>
+                  <td>
+                    @if (r.status === 'PENDING') {
+                      <a [routerLink]="['/ops/reservations', r.id, 'intake']" class="action-link">
+                        Receive fiber →
+                      </a>
+                    } @else if (r.status === 'RECEIVED') {
+                      <span class="received-tag">Lot created</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </pd-table>
         }
       } @else {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .header-actions { display: flex; gap: 8px; }
-    .empty { padding: 32px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; }
-    table { width: 100%; background: white; }
-    .status { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
-    .status.PENDING   { background: #fef3c7; color: #92400e; }
-    .status.RECEIVED  { background: #d1fae5; color: #065f46; }
+    .page { padding: 24px 32px; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
+    .status { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .status.PENDING   { background: var(--pd-color-warning-bg, #fef3c7); color: var(--pd-color-warning-text, #92400e); }
+    .status.RECEIVED  { background: var(--pd-color-success-bg, #d1fae5); color: var(--pd-color-success-text, #065f46); }
     .status.CANCELLED { background: #e5e7eb; color: #374151; }
-    .chip-hirsel  { font-size: 11px; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 4px; }
+    .chip-hirsel  { font-size: 11px; padding: 2px 8px; background: var(--pd-color-info-bg, #dbeafe); color: var(--pd-color-info-text, #1e40af); border-radius: 4px; }
     .chip-walkin  { font-size: 11px; padding: 2px 8px; background: #f3f4f6; color: #666; border-radius: 4px; }
-    .received-tag { font-size: 12px; color: #6b7280; }
+    .received-tag { font-size: 12px; color: var(--pd-color-muted, #6b7280); }
+    .action-link { color: var(--pd-color-link, #2563eb); font-weight: 600; text-decoration: none; font-size: 13px; }
+    .action-link:hover { text-decoration: underline; }
   `],
 })
 export class ReservationsListComponent {
@@ -120,7 +104,6 @@ export class ReservationsListComponent {
   readonly loading = signal(true);
   readonly reservations = signal<Reservation[]>([]);
   readonly customers = signal<Customer[]>([]);
-  readonly cols = ['customer', 'slot', 'weight', 'status', 'source', 'actions'];
 
   constructor() {
     const tid = this.auth.activeTenantId();

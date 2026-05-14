@@ -1,18 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Customer, IntakeFleeceInput, Reservation } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
+  PageHeaderComponent, SelectComponent, SelectOption, SnackbarService,
+} from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { Pool, PoolsService } from '../pools/services/pools.service';
 import { IntakeFleeceTableComponent } from './intake-fleece-table.component';
 import { OperationsService } from './services/operations.service';
-import { DatePipe } from '@angular/common';
 
 /**
  * Intake processing — the workhorse. When fiber arrives:
@@ -26,72 +25,63 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink,
-    MatCardModule, MatButtonModule, MatFormFieldModule, MatSelectModule,
-    IntakeFleeceTableComponent, DatePipe
+    FormsModule, RouterLink, DatePipe,
+    ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
+    PageHeaderComponent, SelectComponent,
+    IntakeFleeceTableComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/ops/reservations" class="back">← Back to reservations</a>
 
       @if (reservation(); as r) {
-        <h1 class="page-title">Receive fiber</h1>
-        <p class="page-subtitle">Weigh each fleece, then save to create the lot.</p>
+        <pd-page-header title="Receive fiber" subtitle="Weigh each fleece, then save to create the lot." />
 
-        <mat-card class="context">
-          <mat-card-content>
-            <div class="context-header">
-              <strong>{{ customer()?.displayName ?? '—' }}</strong>
-              @if (r.externalSource === 'hirsel') {
-                <span class="chip-hirsel">From Hirsel</span>
-              }
-            </div>
-            <div class="context-grid">
-              <div><small>Slot</small><div>{{ r.slotStart | date:'mediumDate' }}</div></div>
-              <div><small>Expected</small><div>{{ r.expectedWeightKg }} kg</div></div>
-              <div><small>Pricing</small><div>{{ r.pricingArrangementId ? 'Set' : 'TBD' }}</div></div>
-            </div>
-          </mat-card-content>
-        </mat-card>
+        <pd-card class="context">
+          <div class="context-header">
+            <strong>{{ customer()?.displayName ?? '—' }}</strong>
+            @if (r.externalSource === 'hirsel') {
+              <span class="chip-hirsel">From Hirsel</span>
+            }
+          </div>
+          <pd-key-value-grid>
+            <pd-kv label="Slot">{{ r.slotStart | date:'mediumDate' }}</pd-kv>
+            <pd-kv label="Expected">{{ r.expectedWeightKg }} kg</pd-kv>
+            <pd-kv label="Pricing">{{ r.pricingArrangementId ? 'Set' : 'TBD' }}</pd-kv>
+          </pd-key-value-grid>
+        </pd-card>
 
         @if (acceptingPools().length > 0) {
           <h2 class="section">Wool pool (optional)</h2>
-          <mat-form-field appearance="outline" class="pool-select">
-            <mat-label>Link this lot to a pool</mat-label>
-            <mat-select [(value)]="selectedPoolId">
-              <mat-option [value]="null">— Not part of a pool —</mat-option>
-              @for (p of acceptingPools(); track p.id) {
-                <mat-option [value]="p.id">{{ p.name }} ({{ formatKind(p.kind) }})</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <pd-select class="pool-select" label="Link this lot to a pool"
+                     [(ngModel)]="selectedPoolId"
+                     [options]="poolOptions()" />
         }
 
         <h2 class="section">Fleeces</h2>
         <ops-intake-fleece-table [(fleeces)]="fleeces" />
 
         <div class="actions">
-          <button mat-button routerLink="/ops/reservations">Cancel</button>
-          <button mat-flat-button color="primary" [disabled]="!canSave() || saving()" (click)="save()">
+          <pd-button variant="ghost" routerLink="/ops/reservations">Cancel</pd-button>
+          <pd-button variant="primary" [disabled]="!canSave() || saving()" (click)="save()">
             {{ saving() ? 'Creating lot…' : 'Save and create lot' }}
-          </button>
+          </pd-button>
         </div>
       } @else if (loading()) {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
+    .page { padding: 24px 32px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
     .context { margin: 16px 0 24px; }
-    .context-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .chip-hirsel { font-size: 11px; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 4px; }
-    .context-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
-    .context-grid small { color: #666; font-size: 12px; }
-    .context-grid div { margin-top: 2px; font-size: 14px; }
-    .section { font-size: 14px; font-weight: 500; margin: 16px 0 8px; }
-    .pool-select { width: 100%; max-width: 480px; }
+    .context-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 16px; }
+    .chip-hirsel { font-size: 11px; padding: 2px 8px; background: var(--pd-color-info-bg, #dbeafe); color: var(--pd-color-info-text, #1e40af); border-radius: 4px; }
+    .section { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--pd-color-text, #111); }
+    .pool-select { display: block; max-width: 480px; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
   `],
 })
 export class IntakeProcessingComponent {
@@ -100,7 +90,7 @@ export class IntakeProcessingComponent {
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -109,7 +99,15 @@ export class IntakeProcessingComponent {
   readonly acceptingPools = signal<Pool[]>([]);
   readonly fleeces = signal<IntakeFleeceInput[]>([{ weightKg: 0 }]);
 
-  selectedPoolId: string | null = null;
+  readonly poolOptions = computed<SelectOption[]>(() => [
+    { value: '', label: '— Not part of a pool —' },
+    ...this.acceptingPools().map((p) => ({
+      value: p.id,
+      label: `${p.name} (${this.formatKind(p.kind)})`,
+    })),
+  ]);
+
+  selectedPoolId = '';
 
   constructor() {
     const tid = this.auth.activeTenantId();
@@ -147,14 +145,14 @@ export class IntakeProcessingComponent {
     this.ops.intake(tid, {
       reservationId: r.id,
       fleeces: this.fleeces(),
-      poolId: this.selectedPoolId ?? undefined,
+      poolId: this.selectedPoolId || undefined,
     }).subscribe({
       next: (lot) => {
-        this.snack.open('Lot created', 'OK', { duration: 2000 });
+        this.snack.show('Lot created', { durationMs: 2000 });
         this.router.navigate(['/ops/lots', lot.id]);
       },
       error: (e) => {
-        this.snack.open('Intake failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Intake failed: ' + (e?.error?.detail ?? 'unknown'));
         this.saving.set(false);
       },
     });

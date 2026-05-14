@@ -1,16 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, CardComponent, EmptyStateComponent,
+  InputComponent, PageHeaderComponent, SelectComponent, SelectOption,
+  SnackbarService, TableComponent,
+} from '@pindraft/ui';
 import { Invitation, InvitationsService, InviteRole } from './services/invitations.service';
 
 @Component({
@@ -19,118 +16,107 @@ import { Invitation, InvitationsService, InviteRole } from './services/invitatio
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, RouterLink, DatePipe,
-    MatCardModule, MatButtonModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatTableModule, MatIconModule,
+    ButtonComponent, CardComponent, EmptyStateComponent,
+    InputComponent, PageHeaderComponent, SelectComponent, TableComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/setup" class="back">← Back to setup</a>
-      <h1 class="page-title">Team</h1>
-      <p class="page-subtitle">Invite operators and admins. Email sending is manual for v1 — you'll get a copyable URL to forward.</p>
+      <pd-page-header
+        title="Team"
+        subtitle="Invite operators and admins. Email sending is manual for v1 — you'll get a copyable URL to forward." />
 
-      <mat-card>
-        <mat-card-content>
-          <h2 class="section">Send an invitation</h2>
-          <div class="invite-form">
-            <mat-form-field appearance="outline" class="grow">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" [(ngModel)]="inviteEmail" autocomplete="off" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Role</mat-label>
-              <mat-select [(value)]="inviteRole">
-                <mat-option value="MILL_OPERATOR">Mill operator</mat-option>
-                <mat-option value="MILL_ADMIN">Mill admin</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <button mat-flat-button color="primary"
-                    [disabled]="!canInvite() || sending()" (click)="send()">
-              {{ sending() ? 'Inviting…' : 'Send invite' }}
-            </button>
-          </div>
+      <pd-card>
+        <h2 class="section">Send an invitation</h2>
+        <div class="invite-form">
+          <pd-input class="grow" label="Email" type="email" [(ngModel)]="inviteEmail" autocomplete="off" />
+          <pd-select label="Role" [(ngModel)]="inviteRole" [options]="roleOptions" />
+          <pd-button variant="primary"
+                  [disabled]="!canInvite() || sending()" (click)="send()">
+            {{ sending() ? 'Inviting…' : 'Send invite' }}
+          </pd-button>
+        </div>
 
-          @if (lastInviteUrl(); as url) {
-            <div class="just-created">
-              <div class="hint">
-                <strong>Invitation created.</strong> Copy this URL and send it to the invitee — it won't be shown again.
-              </div>
-              <div class="url-row">
-                <code>{{ url }}</code>
-                <button mat-icon-button (click)="copy(url)" title="Copy URL"><mat-icon>content_copy</mat-icon></button>
-              </div>
+        @if (lastInviteUrl(); as url) {
+          <div class="just-created">
+            <div class="hint">
+              <strong>Invitation created.</strong> Copy this URL and send it to the invitee — it won't be shown again.
             </div>
-          }
-        </mat-card-content>
-      </mat-card>
+            <div class="url-row">
+              <code>{{ url }}</code>
+              <pd-button variant="ghost" size="sm" (click)="copy(url)" title="Copy URL">Copy</pd-button>
+            </div>
+          </div>
+        }
+      </pd-card>
 
       <h2 class="section">Existing invitations</h2>
       @if (loading()) {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       } @else if (invitations().length === 0) {
-        <div class="empty">No invitations yet.</div>
+        <pd-empty-state title="No invitations yet" description="Invite admins or operators using the form above." />
       } @else {
-        <table mat-table [dataSource]="invitations()">
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
-            <td mat-cell *matCellDef="let i">{{ i.email }}</td>
-          </ng-container>
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Role</th>
-            <td mat-cell *matCellDef="let i">{{ formatRole(i.role) }}</td>
-          </ng-container>
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let i"><span class="status" [class]="i.status">{{ i.status }}</span></td>
-          </ng-container>
-          <ng-container matColumnDef="expires">
-            <th mat-header-cell *matHeaderCellDef>Expires</th>
-            <td mat-cell *matCellDef="let i">{{ i.expiresAt | date:'mediumDate' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef></th>
-            <td mat-cell *matCellDef="let i">
-              @if (i.status === 'PENDING') {
-                <button mat-stroked-button (click)="revoke(i.id)">Revoke</button>
-              }
-            </td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="cols"></tr>
-          <tr mat-row *matRowDef="let row; columns: cols"></tr>
-        </table>
+        <pd-table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Expires</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of invitations(); track i.id) {
+              <tr>
+                <td>{{ i.email }}</td>
+                <td>{{ formatRole(i.role) }}</td>
+                <td><span class="status" [class]="i.status">{{ i.status }}</span></td>
+                <td>{{ i.expiresAt | date:'mediumDate' }}</td>
+                <td>
+                  @if (i.status === 'PENDING') {
+                    <pd-button variant="ghost" size="sm" (click)="revoke(i.id)">Revoke</pd-button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </pd-table>
       }
     </div>
   `,
   styles: [`
     .page { padding: 24px 32px; }
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
-    .page-title { margin: 0; font-size: 24px; }
-    .page-subtitle { color: #666; margin: 4px 0 24px; }
-    .section { font-size: 14px; font-weight: 500; margin: 16px 0 12px; }
-    .invite-form { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
+    .section { font-size: 14px; font-weight: 600; margin: 24px 0 12px; color: var(--pd-color-text, #111); }
+    .invite-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
     .invite-form .grow { flex: 1; min-width: 240px; }
-    .just-created { margin-top: 12px; padding: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; }
-    .just-created .hint { font-size: 13px; color: #065f46; margin-bottom: 8px; }
-    .url-row { display: flex; align-items: center; gap: 6px; background: white; padding: 6px 12px; border-radius: 6px; }
+    .just-created { margin-top: 16px; padding: 12px; background: var(--pd-color-success-bg, #ecfdf5); border: 1px solid var(--pd-color-success-border, #a7f3d0); border-radius: 8px; }
+    .just-created .hint { font-size: 13px; color: var(--pd-color-success-text, #065f46); margin-bottom: 8px; }
+    .url-row { display: flex; align-items: center; gap: 8px; background: white; padding: 8px 12px; border-radius: 6px; }
     .url-row code { flex: 1; font-size: 12px; word-break: break-all; }
-    .empty { padding: 32px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; }
-    table { width: 100%; background: white; margin-top: 8px; }
-    .status { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
-    .status.PENDING  { background: #fef3c7; color: #92400e; }
-    .status.ACCEPTED { background: #d1fae5; color: #065f46; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
+    .status { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .status.PENDING  { background: var(--pd-color-warning-bg, #fef3c7); color: var(--pd-color-warning-text, #92400e); }
+    .status.ACCEPTED { background: var(--pd-color-success-bg, #d1fae5); color: var(--pd-color-success-text, #065f46); }
     .status.EXPIRED  { background: #f3f4f6; color: #4b5563; }
-    .status.REVOKED  { background: #fee2e2; color: #991b1b; }
+    .status.REVOKED  { background: var(--pd-color-danger-bg, #fee2e2); color: var(--pd-color-danger-text, #991b1b); }
   `],
 })
 export class TeamComponent {
   private service = inject(InvitationsService);
   private auth = inject(AuthService);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly sending = signal(false);
   readonly invitations = signal<Invitation[]>([]);
   readonly lastInviteUrl = signal<string | null>(null);
-  readonly cols = ['email', 'role', 'status', 'expires', 'actions'];
+
+  readonly roleOptions: SelectOption[] = [
+    { value: 'MILL_OPERATOR', label: 'Mill operator' },
+    { value: 'MILL_ADMIN', label: 'Mill admin' },
+  ];
 
   inviteEmail = '';
   inviteRole: InviteRole = 'MILL_OPERATOR';
@@ -168,7 +154,7 @@ export class TeamComponent {
         this.reload();
       },
       error: (e) => {
-        this.snack.open('Invite failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Invite failed: ' + (e?.error?.detail ?? 'unknown'));
         this.sending.set(false);
       },
     });
@@ -178,13 +164,13 @@ export class TeamComponent {
     const tid = this.auth.activeTenantId();
     if (!tid) return;
     this.service.revoke(tid, id).subscribe({
-      next: () => { this.snack.open('Revoked', 'OK', { duration: 1500 }); this.reload(); },
+      next: () => { this.snack.show('Revoked', { durationMs: 1500 }); this.reload(); },
     });
   }
 
   copy(url: string): void {
     navigator.clipboard.writeText(url).then(() =>
-      this.snack.open('URL copied', 'OK', { duration: 1500 })
+      this.snack.show('URL copied', { durationMs: 1500 })
     );
   }
 }

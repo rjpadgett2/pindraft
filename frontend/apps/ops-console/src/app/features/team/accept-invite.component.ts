@@ -1,11 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, CardComponent, InputComponent } from '@pindraft/ui';
 import {
   InvitationPublicInfo,
   InvitationsService,
@@ -20,58 +17,54 @@ import {
   selector: 'ops-accept-invite',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [FormsModule, RouterLink, ButtonComponent, CardComponent, InputComponent],
   template: `
     <div class="accept-page">
-      <mat-card class="accept-card">
-        <mat-card-header>
-          <mat-card-title>Pindraft</mat-card-title>
-          <mat-card-subtitle>Accept your invitation</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          @if (loading()) {
-            <p>Verifying invitation…</p>
-          } @else if (lookupError()) {
-            <p class="error">{{ lookupError() }}</p>
-            <a routerLink="/login" mat-stroked-button>Go to sign in</a>
-          } @else if (info(); as inv) {
-            <p class="lead">
-              You've been invited as <strong>{{ formatRole(inv.role) }}</strong>.
-              Set a password to accept and join your mill.
-            </p>
-            <form (submit)="$event.preventDefault(); accept()">
-              <mat-form-field appearance="outline">
-                <mat-label>Email</mat-label>
-                <input matInput [value]="inv.email" readonly />
-              </mat-form-field>
-              <mat-form-field appearance="outline">
-                <mat-label>Your name</mat-label>
-                <input matInput [(ngModel)]="name" name="name" autocomplete="name" />
-              </mat-form-field>
-              <mat-form-field appearance="outline">
-                <mat-label>Choose a password</mat-label>
-                <input matInput type="password" [(ngModel)]="password" name="password" autocomplete="new-password" />
-              </mat-form-field>
-              @if (acceptError()) {
-                <p class="error">{{ acceptError() }}</p>
-              }
-              <button mat-flat-button color="primary" type="submit"
-                  [disabled]="!canAccept() || accepting()">
-                {{ accepting() ? 'Accepting…' : 'Accept and sign in' }}
-              </button>
-            </form>
-          }
-        </mat-card-content>
-      </mat-card>
+      <pd-card class="accept-card" padding="lg">
+        <h1 class="title">Pindraft</h1>
+        <p class="subtitle">Accept your invitation</p>
+
+        @if (loading()) {
+          <p>Verifying invitation…</p>
+        } @else if (lookupError()) {
+          <p class="error">{{ lookupError() }}</p>
+          <pd-button variant="secondary" routerLink="/login">Go to sign in</pd-button>
+        } @else if (info(); as inv) {
+          <p class="lead">
+            You've been invited as <strong>{{ formatRole(inv.role) }}</strong>.
+            Set a password to accept and join your mill.
+          </p>
+          <form (submit)="$event.preventDefault(); accept()">
+            <label class="readonly-field">
+              <span>Email</span>
+              <input [value]="inv.email" readonly />
+            </label>
+            <pd-input label="Your name" [(ngModel)]="name" name="name" autocomplete="name" />
+            <pd-input label="Choose a password" type="password"
+                      [(ngModel)]="password" name="password" autocomplete="new-password" />
+            @if (acceptError()) {
+              <p class="error">{{ acceptError() }}</p>
+            }
+            <pd-button variant="primary" type="submit"
+                [disabled]="!canAccept() || accepting()">
+              {{ accepting() ? 'Accepting…' : 'Accept and sign in' }}
+            </pd-button>
+          </form>
+        }
+      </pd-card>
     </div>
   `,
   styles: [`
-    .accept-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .accept-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; background: var(--pd-color-bg-app, #f9fafb); }
     .accept-card { width: 100%; max-width: 420px; }
-    .lead { font-size: 14px; color: #4b5563; margin: 12px 0 16px; }
-    form { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
-    .error { color: #b91c1c; font-size: 13px; margin: 4px 0 12px; }
-    button { margin-top: 8px; }
+    .title { margin: 0; font-size: 20px; font-weight: 600; color: var(--pd-color-text, #111); }
+    .subtitle { margin: 4px 0 16px; color: var(--pd-color-muted, #6b7280); font-size: 14px; }
+    .lead { font-size: 14px; color: var(--pd-color-text, #4b5563); margin: 12px 0 16px; }
+    form { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+    .readonly-field { display: flex; flex-direction: column; gap: 4px; }
+    .readonly-field span { font-size: 12px; font-weight: 600; color: var(--pd-color-muted, #6b7280); }
+    .readonly-field input { padding: 10px 12px; border: 1px solid var(--pd-color-border, #d1d5db); border-radius: 8px; background: #f9fafb; color: var(--pd-color-text, #111); font-size: 14px; }
+    .error { color: var(--pd-color-danger-text, #b91c1c); font-size: 13px; margin: 4px 0 0; }
   `],
 })
 export class AcceptInviteComponent {

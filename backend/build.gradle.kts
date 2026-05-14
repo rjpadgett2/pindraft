@@ -36,6 +36,10 @@ subprojects {
     dependencies {
         "testImplementation"("org.springframework.boot:spring-boot-starter-test")
         "testImplementation"("org.springframework.modulith:spring-modulith-starter-test")
+        // Gradle 9 + JUnit 5 requires an explicit launcher on the runtime classpath;
+        // pre-9 Gradle bundled it implicitly. Without this, every test task fails
+        // with "Failed to load JUnit Platform" before any test even runs.
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.withType<JavaCompile>().configureEach {

@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
+  PageHeaderComponent, SnackbarService,
+} from '@pindraft/ui';
 import {
   CustomerLotDetail,
   CustomerLotsService,
@@ -24,67 +23,57 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe, RouterLink,
-    MatCardModule, MatButtonModule, MatSlideToggleModule, MatIconModule,
+    ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
+    PageHeaderComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/lots" class="back">← Back to my fiber</a>
 
       @if (detail(); as d) {
-        <h1 class="page-title">Lot {{ d.lot.id.substring(0, 8) }}</h1>
-        <p class="page-subtitle">Received {{ d.lot.createdAt | date:'medium' }}</p>
+        <pd-page-header
+          [title]="'Lot ' + d.lot.id.substring(0, 8)"
+          [subtitle]="receivedLabel(d.lot.createdAt)" />
 
         @if (status(); as s) {
-          <mat-card class="status-card">
-            <mat-card-content>
-              <small>Current status</small>
-              <div class="status-text">{{ s.customerVisibleStatus }}</div>
-              @if (s.currentStage && s.currentStage.queuePosition > 1) {
-                <small class="position-hint">{{ s.currentStage.queuePosition - 1 }} lot(s) ahead of yours at this stage.</small>
-              }
-            </mat-card-content>
-          </mat-card>
+          <pd-card variant="accent" class="status-card">
+            <small>Current status</small>
+            <div class="status-text">{{ s.customerVisibleStatus }}</div>
+            @if (s.currentStage && s.currentStage.queuePosition > 1) {
+              <small class="position-hint">{{ s.currentStage.queuePosition - 1 }} lot(s) ahead of yours at this stage.</small>
+            }
+          </pd-card>
         }
 
-        <div class="grid">
-          <mat-card><mat-card-content>
-            <small>Intake weight</small>
-            <div class="big">{{ d.lot.weightIntakeKg }} kg</div>
-          </mat-card-content></mat-card>
-          <mat-card><mat-card-content>
-            <small>Current stage</small>
-            <div class="big">{{ d.lot.currentStageDisplayName ?? '—' }}</div>
-          </mat-card-content></mat-card>
-          <mat-card><mat-card-content>
-            <small>Status</small>
-            <div class="big">{{ d.lot.status }}</div>
-          </mat-card-content></mat-card>
-        </div>
+        <pd-key-value-grid>
+          <pd-kv label="Intake weight">{{ d.lot.weightIntakeKg }} kg</pd-kv>
+          <pd-kv label="Current stage">{{ d.lot.currentStageDisplayName ?? '—' }}</pd-kv>
+          <pd-kv label="Status">{{ d.lot.status }}</pd-kv>
+        </pd-key-value-grid>
 
         @if (trace(); as t) {
-          <mat-card class="trace-card">
-            <mat-card-content>
-              <div class="trace-row">
-                <div>
-                  <strong>Public provenance page</strong>
-                  <p>Make this lot's journey through the mill publicly viewable at a short URL.</p>
-                </div>
-                <mat-slide-toggle
-                    [checked]="t.publicVisible"
-                    (change)="toggleVisibility($event.checked)">
-                  {{ t.publicVisible ? 'Public' : 'Private' }}
-                </mat-slide-toggle>
+          <pd-card class="trace-card">
+            <div class="trace-row">
+              <div>
+                <strong>Public provenance page</strong>
+                <p>Make this lot's journey through the mill publicly viewable at a short URL.</p>
               </div>
-              @if (t.publicVisible) {
-                <div class="trace-url">
-                  <code>{{ traceUrl(t.slug) }}</code>
-                  <button mat-icon-button (click)="copyTraceUrl(t.slug)" title="Copy URL">
-                    <mat-icon>content_copy</mat-icon>
-                  </button>
-                </div>
-              }
-            </mat-card-content>
-          </mat-card>
+              <label class="toggle">
+                <input type="checkbox" [checked]="t.publicVisible"
+                       (change)="toggleVisibility(getChecked($event))" />
+                <span class="track"><span class="thumb"></span></span>
+                <span class="toggle-label">{{ t.publicVisible ? 'Public' : 'Private' }}</span>
+              </label>
+            </div>
+            @if (t.publicVisible) {
+              <div class="trace-url">
+                <code>{{ traceUrl(t.slug) }}</code>
+                <pd-button variant="ghost" size="sm" (click)="copyTraceUrl(t.slug)" title="Copy URL">
+                  Copy
+                </pd-button>
+              </div>
+            }
+          </pd-card>
         }
 
         <h2 class="section">Journey through the mill</h2>
@@ -132,39 +121,45 @@ import {
           </ul>
         }
       } @else if (loading()) {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 16px; }
-    .grid small { color: #666; font-size: 12px; }
-    .grid .big { font-size: 18px; font-weight: 500; margin-top: 4px; }
-    .trace-card { margin-bottom: 16px; }
+    .page { padding: 24px 32px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
+    .status-card { margin: 0 0 16px; }
+    .status-card small { color: var(--pd-color-muted, #6b7280); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .status-text { font-size: 18px; font-weight: 600; margin-top: 4px; color: var(--pd-color-text, #111); }
+    .position-hint { display: block; margin-top: 6px; color: var(--pd-color-muted, #6b7280); text-transform: none; letter-spacing: normal; font-size: 12px; }
+    .trace-card { margin: 16px 0; }
     .trace-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-    .trace-row p { font-size: 12px; color: #666; margin: 4px 0 0; }
-    .trace-url { display: flex; align-items: center; gap: 4px; margin-top: 12px; padding: 8px 12px; background: #f9fafb; border-radius: 6px; }
-    .trace-url code { flex: 1; font-size: 13px; color: #1a1a1a; }
-    .section { font-size: 14px; font-weight: 500; margin: 24px 0 12px; }
-    .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid #e5e7eb; padding-left: 16px; }
+    .trace-row p { font-size: 12px; color: var(--pd-color-muted, #666); margin: 4px 0 0; }
+    .trace-url { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; background: var(--pd-color-bg-sunken, #f9fafb); border-radius: 6px; }
+    .trace-url code { flex: 1; font-size: 13px; color: var(--pd-color-text, #1a1a1a); font-family: var(--pd-font-mono, ui-monospace, monospace); }
+    .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; user-select: none; }
+    .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .toggle .track { display: inline-block; width: 36px; height: 20px; background: #d1d5db; border-radius: 999px; position: relative; transition: background 0.15s; }
+    .toggle .thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+    .toggle input:checked + .track { background: var(--pd-brand-accent, #c2410c); }
+    .toggle input:checked + .track .thumb { transform: translateX(16px); }
+    .toggle input:focus-visible + .track { outline: 2px solid var(--pd-brand-accent, #c2410c); outline-offset: 2px; }
+    .section { font-size: 14px; font-weight: 600; margin: 24px 0 12px; color: var(--pd-color-text, #111); }
+    .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--pd-color-border, #e5e7eb); padding-left: 16px; }
     .timeline li { padding: 8px 0; }
-    .timeline .meta { font-size: 12px; color: #666; margin-top: 2px; }
+    .timeline .meta { font-size: 12px; color: var(--pd-color-muted, #666); margin-top: 2px; }
     .fleeces, .tests { list-style: none; padding: 0; margin: 0; }
-    .fleeces li, .tests li { padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; font-size: 13px; }
+    .fleeces li, .tests li { padding: 8px 12px; background: white; border: 1px solid var(--pd-color-border, #e5e7eb); border-radius: 6px; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; font-size: 13px; }
     .fleeces .chip, .tests .chip { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; }
-    .fleeces .weight, .tests .weight { margin-left: auto; color: #666; }
-    .tests .result { font-weight: 500; font-family: ui-monospace, monospace; color: #1a1a1a; }
-    .status-card { margin: 16px 0; background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%); }
-    .status-card small { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .status-text { font-size: 18px; font-weight: 500; margin-top: 4px; color: #1a1a1a; }
-    .position-hint { display: block; margin-top: 6px; color: #6b7280; text-transform: none; letter-spacing: normal; font-size: 12px; }
+    .fleeces .weight, .tests .weight { margin-left: auto; color: var(--pd-color-muted, #666); }
+    .tests .result { font-weight: 600; font-family: var(--pd-font-mono, ui-monospace, monospace); color: var(--pd-color-text, #1a1a1a); }
   `],
 })
 export class CustomerLotDetailComponent {
   private service = inject(CustomerLotsService);
   private route = inject(ActivatedRoute);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly detail = signal<CustomerLotDetail | null>(null);
@@ -197,6 +192,10 @@ export class CustomerLotDetailComponent {
     });
   }
 
+  receivedLabel(iso: string): string {
+    return 'Received ' + new Date(iso).toLocaleString();
+  }
+
   formatTestType(t: string): string {
     return t.replace(/_/g, ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase());
   }
@@ -207,8 +206,12 @@ export class CustomerLotDetailComponent {
 
   copyTraceUrl(slug: string): void {
     navigator.clipboard.writeText(this.traceUrl(slug)).then(() =>
-      this.snack.open('URL copied', 'OK', { duration: 1500 })
+      this.snack.show('URL copied', { durationMs: 1500 })
     );
+  }
+
+  getChecked(e: Event): boolean {
+    return (e.target as HTMLInputElement).checked;
   }
 
   toggleVisibility(checked: boolean): void {
@@ -217,9 +220,9 @@ export class CustomerLotDetailComponent {
     this.service.setTraceVisibility(lotId, checked).subscribe({
       next: (t) => {
         this.trace.set(t);
-        this.snack.open(checked ? 'Now public' : 'Now private', 'OK', { duration: 1500 });
+        this.snack.show(checked ? 'Now public' : 'Now private', { durationMs: 1500 });
       },
-      error: (e) => this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      error: (e) => this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 }

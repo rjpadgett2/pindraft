@@ -1,11 +1,9 @@
 import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { CreatePricingTemplateRequest, PricingKind, TieredTier } from '@pindraft/api-client';
+import {
+  ButtonComponent, InputComponent, SelectComponent, SelectOption,
+} from '@pindraft/ui';
 
 /**
  * Presentational form for creating a pricing template. Switches the rendered
@@ -20,105 +18,83 @@ import { CreatePricingTemplateRequest, PricingKind, TieredTier } from '@pindraft
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatIconModule,
+    ButtonComponent, InputComponent, SelectComponent,
   ],
   template: `
     <div class="form">
       <div class="row">
-        <mat-form-field appearance="outline" class="grow">
-          <mat-label>Template name</mat-label>
-          <input matInput [(ngModel)]="name" placeholder="e.g., Standard per-pound" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Kind</mat-label>
-          <mat-select [(value)]="kind">
-            <mat-option value="PER_POUND">Per pound (simplest)</mat-option>
-            <mat-option value="HYBRID">Flat fee + per pound</mat-option>
-            <mat-option value="TIERED_BY_GRADE">Tiered by micron grade</mat-option>
-            <mat-option value="REVENUE_SPLIT">Revenue split</mat-option>
-          </mat-select>
-        </mat-form-field>
+        <pd-input class="grow" label="Template name" [(ngModel)]="name" />
+        <pd-select label="Kind" [(ngModel)]="kind" [options]="kindOptions" />
       </div>
 
       @switch (kind) {
         @case ('PER_POUND') {
           <div class="row">
-            <mat-form-field appearance="outline" class="grow">
-              <mat-label>Price per kilogram (USD)</mat-label>
-              <input matInput type="number" min="0" step="0.01" [(ngModel)]="pricePerKg" />
-            </mat-form-field>
+            <pd-input class="grow" label="Price per kilogram (USD)" type="number" [(ngModel)]="pricePerKg" />
           </div>
         }
         @case ('HYBRID') {
           <div class="row">
-            <mat-form-field appearance="outline">
-              <mat-label>Flat fee (USD)</mat-label>
-              <input matInput type="number" min="0" step="0.01" [(ngModel)]="flatFee" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Plus per kilogram (USD)</mat-label>
-              <input matInput type="number" min="0" step="0.01" [(ngModel)]="pricePerKg" />
-            </mat-form-field>
+            <pd-input label="Flat fee (USD)" type="number" [(ngModel)]="flatFee" />
+            <pd-input label="Plus per kilogram (USD)" type="number" [(ngModel)]="pricePerKg" />
           </div>
         }
         @case ('REVENUE_SPLIT') {
           <div class="row">
-            <mat-form-field appearance="outline">
-              <mat-label>Mill percent</mat-label>
-              <input matInput type="number" min="0" max="100" [(ngModel)]="millPercent" (ngModelChange)="syncBrandPercent()" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Brand percent</mat-label>
-              <input matInput type="number" min="0" max="100" [(ngModel)]="brandPercent" />
-            </mat-form-field>
-            <p class="hint">Must sum to 100.</p>
+            <pd-input label="Mill percent" type="number" [(ngModel)]="millPercent" (ngModelChange)="syncBrandPercent()" />
+            <pd-input label="Brand percent" type="number" [(ngModel)]="brandPercent" />
           </div>
+          <p class="hint">Must sum to 100.</p>
         }
         @case ('TIERED_BY_GRADE') {
           <div class="tiers">
             <p class="hint">Lower-micron fibers price higher. Add tiers in micron order.</p>
             @for (tier of tiers(); track $index) {
               <div class="tier-row">
-                <mat-form-field appearance="outline">
-                  <mat-label>Max micron</mat-label>
-                  <input matInput type="number" min="1" [(ngModel)]="tier.maxMicron" />
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                  <mat-label>Price per kg (USD)</mat-label>
-                  <input matInput type="number" min="0" step="0.01" [(ngModel)]="tier.pricePerKg" />
-                </mat-form-field>
-                <button mat-icon-button (click)="removeTier($index)" [disabled]="tiers().length === 1">
-                  <mat-icon>remove_circle_outline</mat-icon>
-                </button>
+                <pd-input label="Max micron" type="number" [(ngModel)]="tier.maxMicron" />
+                <pd-input label="Price per kg (USD)" type="number" [(ngModel)]="tier.pricePerKg" />
+                <pd-button variant="ghost" size="sm" (click)="removeTier($index)" [disabled]="tiers().length === 1">
+                  Remove
+                </pd-button>
               </div>
             }
-            <button mat-stroked-button (click)="addTier()">+ Add tier</button>
+            <div>
+              <pd-button variant="secondary" size="sm" (click)="addTier()">+ Add tier</pd-button>
+            </div>
           </div>
         }
       }
 
       <div class="actions">
-        <button mat-button (click)="cancel.emit()">Cancel</button>
-        <button mat-flat-button color="primary" [disabled]="!canSave()" (click)="onSave()">
+        <pd-button variant="ghost" (click)="cancel.emit()">Cancel</pd-button>
+        <pd-button variant="primary" [disabled]="!canSave()" (click)="onSave()">
           Save template
-        </button>
+        </pd-button>
       </div>
     </div>
   `,
   styles: [`
-    .form { background: #f9fafb; padding: 20px; border-radius: 8px; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
-    .row mat-form-field { min-width: 180px; }
+    .form { background: var(--pd-color-bg-sunken, #f9fafb); padding: 20px; border-radius: 8px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+    .row pd-input, .row pd-select { min-width: 180px; }
     .row .grow { flex: 1; min-width: 240px; }
     .tiers { display: flex; flex-direction: column; gap: 8px; }
-    .tier-row { display: flex; gap: 8px; align-items: center; }
-    .hint { font-size: 12px; color: #666; margin: 4px 0 8px; }
+    .tier-row { display: flex; gap: 8px; align-items: flex-end; }
+    .tier-row pd-input { flex: 1; }
+    .hint { font-size: 12px; color: var(--pd-color-muted, #666); margin: 4px 0 8px; }
     .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
   `],
 })
 export class PricingFormComponent {
   readonly save = output<CreatePricingTemplateRequest>();
   readonly cancel = output<void>();
+
+  readonly kindOptions: SelectOption[] = [
+    { value: 'PER_POUND', label: 'Per pound (simplest)' },
+    { value: 'HYBRID', label: 'Flat fee + per pound' },
+    { value: 'TIERED_BY_GRADE', label: 'Tiered by micron grade' },
+    { value: 'REVENUE_SPLIT', label: 'Revenue split' },
+  ];
 
   name = '';
   kind: PricingKind = 'PER_POUND';

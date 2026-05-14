@@ -3,27 +3,63 @@
 @include mat.elevation-classes();
 @include mat.app-background();
 
+/*
+ * Material theme — REQUIRED for Material 21 components to render. Without this,
+ * mat-card / mat-form-field / mat-button have no color/typography tokens and
+ * render invisible.
+ */
+html {
+  @include mat.theme((
+    color: mat.$azure-palette,
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+/* Pindraft design tokens. */
+@import '../../../libs/ui/src/lib/tokens.css';
+
+/*
+ * Shearer-pwa brand: sage + dark slate. Outdoors-coded, calm, mobile-first.
+ */
+:root {
+  --pd-brand-accent:        #6b8559;   /* sage */
+  --pd-brand-accent-hover:  #587047;
+  --pd-brand-accent-bg:     #eef3ea;
+  --pd-brand-accent-strong: #455837;   /* moss */
+  --pd-brand-text-on-accent: #ffffff;
+}
+
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Helvetica Neue', sans-serif;
-  background: #fafafa;
-  color: #1a1a1a;
+  font-family: var(--pd-font-sans);
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  background: var(--pd-color-bg-app);
+  color: var(--pd-color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 * { box-sizing: border-box; }
 
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--pd-space-4);
 }
+
+/* LEGACY — pre-design-system classes. */
 .page-title {
-  font-size: 22px;
-  font-weight: 500;
-  margin: 0 0 4px;
+  font-size: var(--pd-text-xl);
+  line-height: var(--pd-leading-xl);
+  font-weight: var(--pd-weight-semibold);
+  margin: 0 0 var(--pd-space-1);
+  color: var(--pd-color-text);
 }
 .page-subtitle {
-  font-size: 13px;
-  color: #666;
-  margin: 0 0 16px;
+  font-size: var(--pd-text-sm);
+  line-height: var(--pd-leading-sm);
+  color: var(--pd-color-text-muted);
+  margin: 0 0 var(--pd-space-4);
 }

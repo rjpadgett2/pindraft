@@ -26,6 +26,9 @@ public class UserEntity {
     @Column(name = "is_platform_admin", nullable = false)
     private boolean platformAdmin;
 
+    @Column(name = "user_type", length = 32) @Nullable
+    private String userType;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -45,11 +48,18 @@ public class UserEntity {
         this.updatedAt = now;
     }
 
+    public UserEntity(UUID id, String email, String passwordHash, String name,
+                      boolean platformAdmin, @Nullable String userType) {
+        this(id, email, passwordHash, name, platformAdmin);
+        this.userType = userType;
+    }
+
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public String getName() { return name; }
     public boolean isPlatformAdmin() { return platformAdmin; }
+    @Nullable public String getUserType() { return userType; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 

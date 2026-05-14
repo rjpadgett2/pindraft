@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { SnackbarContainerComponent } from '@pindraft/ui';
 
 @Component({
   selector: 'customer-shell',
@@ -12,6 +13,7 @@ import { AuthService } from '@pindraft/auth';
   imports: [
     RouterOutlet, RouterLink, RouterLinkActive,
     MatToolbarModule, MatButtonModule, MatIconModule,
+    SnackbarContainerComponent,
   ],
   template: `
     <mat-toolbar class="top">
@@ -29,6 +31,7 @@ import { AuthService } from '@pindraft/auth';
       </button>
     </mat-toolbar>
     <main><router-outlet /></main>
+    <pd-snackbar-container />
   `,
   styles: [`
     .top { display: flex; align-items: center; gap: 16px; padding: 0 16px; background: #1a1a1a; color: white; }

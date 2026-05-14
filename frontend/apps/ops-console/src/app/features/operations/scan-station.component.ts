@@ -1,20 +1,18 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { Customer, Equipment, LotDetailFull, WorkflowStage } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, CardComponent, InputComponent,
+  KeyValueGridComponent, KvComponent, PageHeaderComponent,
+  SelectComponent, SelectOption, SnackbarService,
+} from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from '../onboarding/services/onboarding.service';
 import { OperationsService } from './services/operations.service';
-import { DatePipe } from '@angular/common';
 
 /**
  * Scan station — the always-open ambient surface for fast stage transitions.
@@ -33,84 +31,74 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink,
-    MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatButtonModule, MatChipsModule, MatIconModule, DatePipe
+    FormsModule, RouterLink, DatePipe, MatIconModule,
+    ButtonComponent, CardComponent, InputComponent,
+    KeyValueGridComponent, KvComponent, PageHeaderComponent, SelectComponent,
   ],
   template: `
     <div class="page">
-      <h1 class="page-title">Scan station</h1>
-      <p class="page-subtitle">Scan a lot QR or paste a lot ID to advance it through the workflow.</p>
+      <pd-page-header
+        title="Scan station"
+        subtitle="Scan a lot QR or paste a lot ID to advance it through the workflow." />
 
-      <mat-card class="mode-card">
-        <mat-card-content>
-          <div class="mode-row">
-            <span class="mode-label">Mode:</span>
-            <button mat-button [class.active]="mode() === 'SINGLE'" (click)="setMode('SINGLE')">
-              Single lot
-            </button>
-            <button mat-button [class.active]="mode() === 'BATCH'" (click)="setMode('BATCH')">
-              Batch to equipment
-            </button>
+      <pd-card class="mode-card">
+        <div class="mode-row">
+          <span class="mode-label">Mode:</span>
+          <pd-button [variant]="mode() === 'SINGLE' ? 'primary' : 'ghost'" size="sm" (click)="setMode('SINGLE')">
+            Single lot
+          </pd-button>
+          <pd-button [variant]="mode() === 'BATCH' ? 'primary' : 'ghost'" size="sm" (click)="setMode('BATCH')">
+            Batch to equipment
+          </pd-button>
+        </div>
+
+        @if (mode() === 'BATCH') {
+          <div class="equipment-row">
+            <pd-select class="equipment-select" label="Equipment"
+                       [(ngModel)]="selectedEquipmentId"
+                       [options]="equipmentOptions()" />
           </div>
-
-          @if (mode() === 'BATCH') {
-            <mat-form-field appearance="outline" class="equipment-select">
-              <mat-label>Equipment</mat-label>
-              <mat-select [(value)]="selectedEquipmentId">
-                <mat-option [value]="null">— None / cancel batch —</mat-option>
-                @for (e of equipment(); track e.id) {
-                  <mat-option [value]="e.id">{{ e.name }} ({{ stageDisplayName(e.workflowStageId) }})</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            @if (selectedEquipmentId) {
-              <p class="hint">Every subsequent scan attaches to this equipment's open run.</p>
-            }
+          @if (selectedEquipmentId) {
+            <p class="hint">Every subsequent scan attaches to this equipment's open run.</p>
           }
-        </mat-card-content>
-      </mat-card>
+        }
+      </pd-card>
 
-      <mat-form-field appearance="outline" class="scan-input">
-        <mat-label>Scan or paste lot ID</mat-label>
-        <input #scanInput matInput
+      <div class="scan-input">
+        <input #scanInput
+            class="pd-scan-field"
             [(ngModel)]="lotIdInput"
             (keyup.enter)="onScan()"
-            placeholder="e.g., 81f0c2…"
+            placeholder="Scan or paste lot ID (e.g., 81f0c2…)"
             autocomplete="off" />
-      </mat-form-field>
+      </div>
 
       @if (currentLot(); as lot) {
-        <mat-card class="lot-card">
-          <mat-card-content>
-            <header>
-              <strong>{{ lot.lot.id.substring(0, 8) }}</strong>
-              <span class="meta">{{ customerName(lot.lot.customerId) }}</span>
-            </header>
-            <div class="grid">
-              <div><small>Current stage</small><div>{{ currentStageName() }}</div></div>
-              <div><small>Intake weight</small><div>{{ lot.lot.weightIntakeKg }} kg</div></div>
-              <div><small>Next stage</small><div>{{ nextStageName() }}</div></div>
-            </div>
+        <pd-card class="lot-card">
+          <header>
+            <strong>{{ lot.lot.id.substring(0, 8) }}</strong>
+            <span class="meta">{{ customerName(lot.lot.customerId) }}</span>
+          </header>
+          <pd-key-value-grid>
+            <pd-kv label="Current stage">{{ currentStageName() }}</pd-kv>
+            <pd-kv label="Intake weight">{{ lot.lot.weightIntakeKg }} kg</pd-kv>
+            <pd-kv label="Next stage">{{ nextStageName() }}</pd-kv>
+          </pd-key-value-grid>
 
-            @if (canTransition()) {
-              <div class="action-row">
-                <mat-form-field appearance="outline">
-                  <mat-label>Weight out (kg)</mat-label>
-                  <input matInput type="number" min="0" step="0.1" [(ngModel)]="weightOut" />
-                </mat-form-field>
-                <button mat-flat-button color="primary"
-                    [disabled]="!canConfirm() || working()"
-                    (click)="confirm()">
-                  {{ working() ? 'Moving…' : 'Move to ' + nextStageName() }}
-                </button>
-                <a mat-button [routerLink]="['/ops/lots', lot.lot.id]">View detail</a>
-              </div>
-            } @else {
-              <p class="muted">No next stage available.</p>
-            }
-          </mat-card-content>
-        </mat-card>
+          @if (canTransition()) {
+            <div class="action-row">
+              <pd-input label="Weight out (kg)" type="number" [(ngModel)]="weightOut" />
+              <pd-button variant="primary"
+                  [disabled]="!canConfirm() || working()"
+                  (click)="confirm()">
+                {{ working() ? 'Moving…' : 'Move to ' + nextStageName() }}
+              </pd-button>
+              <pd-button variant="ghost" [routerLink]="['/ops/lots', lot.lot.id]">View detail</pd-button>
+            </div>
+          } @else {
+            <p class="muted">No next stage available.</p>
+          }
+        </pd-card>
       }
 
       @if (recentActions().length > 0) {
@@ -128,34 +116,42 @@ import { DatePipe } from '@angular/common';
     </div>
   `,
   styles: [`
+    .page { padding: 24px 32px; }
     .mode-card { margin-bottom: 16px; }
-    .mode-row { display: flex; align-items: center; gap: 4px; }
-    .mode-label { font-size: 13px; color: #666; margin-right: 8px; }
-    .mode-row button.active { background: #dbeafe; color: #1e40af; }
-    .equipment-select { width: 100%; margin-top: 12px; }
-    .hint { font-size: 12px; color: #666; margin: 0; }
-    .scan-input { width: 100%; max-width: 600px; }
-    .scan-input ::ng-deep input { font-size: 18px; font-family: monospace; }
-    .lot-card { margin-top: 16px; }
+    .mode-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mode-label { font-size: 13px; color: var(--pd-color-muted, #666); margin-right: 8px; }
+    .equipment-row { margin-top: 12px; }
+    .equipment-select { display: block; }
+    .hint { font-size: 12px; color: var(--pd-color-muted, #666); margin: 8px 0 0; }
+    .scan-input { max-width: 600px; margin-bottom: 16px; }
+    .pd-scan-field {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      font-family: var(--pd-font-mono, ui-monospace, monospace);
+      background: white;
+      border: 2px solid var(--pd-color-border, #e5e7eb);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .pd-scan-field:focus { border-color: var(--pd-brand-accent, #2563eb); }
     .lot-card header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
-    .lot-card header .meta { color: #666; font-size: 13px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .grid small { color: #666; font-size: 12px; }
-    .grid div div { font-size: 14px; font-weight: 500; margin-top: 2px; }
-    .action-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
-    .muted { color: #9ca3af; }
-    .section { font-size: 14px; font-weight: 500; margin: 24px 0 8px; }
+    .lot-card header .meta { color: var(--pd-color-muted, #666); font-size: 13px; }
+    .action-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 16px; }
+    .muted { color: var(--pd-color-muted, #9ca3af); }
+    .section { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--pd-color-text, #111); }
     .recent { list-style: none; padding: 0; margin: 0; }
     .recent li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
-    .recent mat-icon { color: #10b981; font-size: 18px; height: 18px; width: 18px; }
-    .recent small { margin-left: auto; color: #9ca3af; }
+    .recent mat-icon { color: var(--pd-color-success, #10b981); font-size: 18px; height: 18px; width: 18px; }
+    .recent small { margin-left: auto; color: var(--pd-color-muted, #9ca3af); }
   `],
 })
 export class ScanStationComponent {
   private ops = inject(OperationsService);
   private onboarding = inject(OnboardingService);
   private auth = inject(AuthService);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   private scanInput = viewChild<ElementRef<HTMLInputElement>>('scanInput');
 
@@ -167,8 +163,16 @@ export class ScanStationComponent {
   readonly recentActions = signal<{ id: string; label: string; at: Date }[]>([]);
   readonly working = signal(false);
 
+  readonly equipmentOptions = computed<SelectOption[]>(() => [
+    { value: '', label: '— None / cancel batch —' },
+    ...this.equipment().map((e) => ({
+      value: e.id,
+      label: `${e.name} (${this.stageDisplayName(e.workflowStageId)})`,
+    })),
+  ]);
+
   lotIdInput = '';
-  selectedEquipmentId: string | null = null;
+  selectedEquipmentId = '';
   weightOut = 0;
 
   readonly currentStageName = computed(() => {
@@ -203,7 +207,7 @@ export class ScanStationComponent {
 
   setMode(m: 'SINGLE' | 'BATCH'): void {
     this.mode.set(m);
-    if (m === 'SINGLE') this.selectedEquipmentId = null;
+    if (m === 'SINGLE') this.selectedEquipmentId = '';
     this.focusInput();
   }
 
@@ -226,7 +230,7 @@ export class ScanStationComponent {
         this.weightOut = Number(detail.lot.weightIntakeKg ?? 0);
       },
       error: (e) => {
-        this.snack.open('Lot not found: ' + (e?.error?.detail ?? id), 'OK', { duration: 3000 });
+        this.snack.show('Lot not found: ' + (e?.error?.detail ?? id), { durationMs: 3000 });
         this.currentLot.set(null);
       },
     });
@@ -243,7 +247,7 @@ export class ScanStationComponent {
     this.working.set(true);
     this.ops.transitionLot(tid, lot.id, {
       weightOutKg: this.weightOut,
-      equipmentId: this.mode() === 'BATCH' ? this.selectedEquipmentId ?? undefined : undefined,
+      equipmentId: this.mode() === 'BATCH' ? (this.selectedEquipmentId || undefined) : undefined,
     }).subscribe({
       next: () => {
         const label = `Moved ${lot.id.substring(0, 8)} to ${this.nextStageName()}`;
@@ -251,14 +255,14 @@ export class ScanStationComponent {
           { id: Date.now().toString(), label, at: new Date() },
           ...list,
         ].slice(0, 8));
-        this.snack.open(label, 'OK', { duration: 1500 });
+        this.snack.show(label, { durationMs: 1500 });
         this.lotIdInput = '';
         this.currentLot.set(null);
         this.working.set(false);
         this.focusInput();
       },
       error: (e) => {
-        this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown'));
         this.working.set(false);
       },
     });

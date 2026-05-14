@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TenantProfile } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, InputComponent, PageHeaderComponent,
+  SelectComponent, SelectOption, SnackbarService,
+} from '@pindraft/ui';
 import { OnboardingService } from './services/onboarding.service';
 
 @Component({
@@ -16,61 +15,56 @@ import { OnboardingService } from './services/onboarding.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, RouterLink,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule,
+    ButtonComponent, InputComponent, PageHeaderComponent, SelectComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/setup" class="back">← Back to setup</a>
-      <h1 class="page-title">Mill profile</h1>
-      <p class="page-subtitle">Basics that show up on every operator screen and customer-facing artifact.</p>
+      <pd-page-header
+        title="Mill profile"
+        subtitle="Basics that show up on every operator screen and customer-facing artifact." />
 
       @if (profile(); as p) {
         <div class="form">
-          <mat-form-field appearance="outline">
-            <mat-label>Mill name</mat-label>
-            <input matInput [(ngModel)]="name" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Default weight unit</mat-label>
-            <mat-select [(value)]="defaultUnit">
-              <mat-option value="kg">Kilograms (kg)</mat-option>
-              <mat-option value="lb">Pounds (lb)</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Time zone</mat-label>
-            <input matInput [(ngModel)]="timeZone" placeholder="e.g., America/New_York" />
-          </mat-form-field>
+          <pd-input label="Mill name" [(ngModel)]="name" />
+          <pd-select label="Default weight unit" [(ngModel)]="defaultUnit" [options]="unitOptions" />
+          <pd-input label="Time zone" [(ngModel)]="timeZone"
+                    helper="e.g., America/New_York" />
 
           <div class="actions">
-            <button mat-button routerLink="/setup">Cancel</button>
-            <button mat-flat-button color="primary" [disabled]="saving()" (click)="save()">
+            <pd-button variant="ghost" routerLink="/setup">Cancel</pd-button>
+            <pd-button variant="primary" [disabled]="saving()" (click)="save()">
               {{ saving() ? 'Saving…' : 'Save changes' }}
-            </button>
+            </pd-button>
           </div>
         </div>
       } @else if (loading()) {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
+    .page { padding: 24px 32px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
     .form { display: flex; flex-direction: column; gap: 16px; max-width: 480px; }
-    mat-form-field { width: 100%; }
+    pd-input, pd-select { display: block; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
   `],
 })
 export class MillProfileComponent {
   private onboarding = inject(OnboardingService);
   private auth = inject(AuthService);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly profile = signal<TenantProfile | null>(null);
+
+  readonly unitOptions: SelectOption[] = [
+    { value: 'kg', label: 'Kilograms (kg)' },
+    { value: 'lb', label: 'Pounds (lb)' },
+  ];
 
   name = '';
   defaultUnit: 'kg' | 'lb' = 'kg';
@@ -102,11 +96,11 @@ export class MillProfileComponent {
     }).subscribe({
       next: (p) => {
         this.profile.set(p);
-        this.snack.open('Profile saved', 'OK', { duration: 2000 });
+        this.snack.show('Profile saved', { durationMs: 2000 });
         this.saving.set(false);
       },
       error: (e) => {
-        this.snack.open('Save failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Save failed: ' + (e?.error?.detail ?? 'unknown'));
         this.saving.set(false);
       },
     });

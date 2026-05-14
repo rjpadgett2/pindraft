@@ -3,9 +3,21 @@ import { authGuard } from '@pindraft/auth';
 
 export const appRoutes: Routes = [
   {
+    // Public marketing landing — first thing prospective mills see. No auth gate.
+    path: 'welcome',
+    loadComponent: () =>
+      import('./features/welcome/welcome.component').then((m) => m.WelcomeComponent),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    // Self-service mill registration — public, creates user + tenant + MILL_ADMIN.
+    path: 'register',
+    loadComponent: () =>
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
     // Public accept page — no auth guard. Recipient hasn't signed in yet.

@@ -1,19 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { Customer, PricingTemplate } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, CardComponent, DatepickerComponent,
+  InputComponent, PageHeaderComponent, SelectComponent, SelectOption,
+  SnackbarService,
+} from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from '../onboarding/services/onboarding.service';
 import { OperationsService } from './services/operations.service';
-import { TitleCasePipe } from '@angular/common';
 
 /**
  * New reservation form. Includes inline "add walk-in customer" affordance so the
@@ -25,93 +22,59 @@ import { TitleCasePipe } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, RouterLink,
-    MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatDatepickerModule, MatNativeDateModule, MatButtonModule, TitleCasePipe
+    ButtonComponent, CardComponent, DatepickerComponent,
+    InputComponent, PageHeaderComponent, SelectComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/ops/reservations" class="back">← Back to reservations</a>
-      <h1 class="page-title">New reservation</h1>
-      <p class="page-subtitle">Book a slot for incoming fiber.</p>
+      <pd-page-header title="New reservation" subtitle="Book a slot for incoming fiber." />
 
       <div class="form">
         <h2>Customer</h2>
         @if (!addingCustomer()) {
           <div class="row">
-            <mat-form-field appearance="outline" class="grow">
-              <mat-label>Customer</mat-label>
-              <mat-select [(value)]="customerId">
-                @for (c of customers(); track c.id) {
-                  <mat-option [value]="c.id">{{ c.displayName }} ({{ c.customerKind | titlecase }})</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <button mat-stroked-button (click)="addingCustomer.set(true)">+ Walk-in</button>
+            <pd-select class="grow" label="Customer" [(ngModel)]="customerId" [options]="customerOptions()" />
+            <pd-button variant="secondary" (click)="addingCustomer.set(true)">+ Walk-in</pd-button>
           </div>
         } @else {
-          <div class="inline-add">
-            <mat-form-field appearance="outline">
-              <mat-label>Name</mat-label>
-              <input matInput [(ngModel)]="newCustomerName" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Kind</mat-label>
-              <mat-select [(value)]="newCustomerKind">
-                <mat-option value="SHEPHERD">Shepherd</mat-option>
-                <mat-option value="DESIGNER">Designer</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Email (optional)</mat-label>
-              <input matInput type="email" [(ngModel)]="newCustomerEmail" />
-            </mat-form-field>
-            <button mat-flat-button color="primary" [disabled]="!newCustomerName" (click)="saveNewCustomer()">
-              Add customer
-            </button>
-            <button mat-button (click)="addingCustomer.set(false)">Cancel</button>
-          </div>
+          <pd-card variant="sunken">
+            <div class="inline-add">
+              <pd-input label="Name" [(ngModel)]="newCustomerName" />
+              <pd-select label="Kind" [(ngModel)]="newCustomerKind" [options]="kindOptions" />
+              <pd-input label="Email (optional)" type="email" [(ngModel)]="newCustomerEmail" />
+              <pd-button variant="primary" [disabled]="!newCustomerName" (click)="saveNewCustomer()">
+                Add customer
+              </pd-button>
+              <pd-button variant="ghost" (click)="addingCustomer.set(false)">Cancel</pd-button>
+            </div>
+          </pd-card>
         }
 
         <h2>Details</h2>
         <div class="row">
-          <mat-form-field appearance="outline">
-            <mat-label>Expected weight (kg)</mat-label>
-            <input matInput type="number" min="0" step="0.1" [(ngModel)]="expectedWeightKg" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Slot date</mat-label>
-            <input matInput [matDatepicker]="picker" [(ngModel)]="slotDate" />
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="grow">
-            <mat-label>Pricing template</mat-label>
-            <mat-select [(value)]="pricingArrangementId">
-              <mat-option [value]="null">— None / TBD —</mat-option>
-              @for (t of pricingTemplates(); track t.id) {
-                <mat-option [value]="t.id">{{ t.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <pd-input label="Expected weight (kg)" type="number" [(ngModel)]="expectedWeightKg" />
+          <pd-datepicker label="Slot date" [(ngModel)]="slotDate" />
+          <pd-select class="grow" label="Pricing template" [(ngModel)]="pricingArrangementId" [options]="pricingOptions()" />
         </div>
 
         <div class="actions">
-          <button mat-button routerLink="/ops/reservations">Cancel</button>
-          <button mat-flat-button color="primary" [disabled]="!canSave()" (click)="save()">
+          <pd-button variant="ghost" routerLink="/ops/reservations">Cancel</pd-button>
+          <pd-button variant="primary" [disabled]="!canSave()" (click)="save()">
             Save reservation
-          </button>
+          </pd-button>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
-    .form h2 { font-size: 14px; font-weight: 500; margin: 24px 0 12px; color: #374151; }
+    .page { padding: 24px 32px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
+    .form h2 { font-size: 14px; font-weight: 600; margin: 24px 0 12px; color: var(--pd-color-text, #111); }
     .form h2:first-child { margin-top: 0; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
-    .row mat-form-field { min-width: 180px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
     .row .grow { flex: 1; min-width: 240px; }
-    .inline-add { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; background: #f9fafb; padding: 16px; border-radius: 8px; }
+    .inline-add { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
     .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
   `],
 })
@@ -120,16 +83,32 @@ export class NewReservationComponent {
   private onboarding = inject(OnboardingService);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly customers = signal<Customer[]>([]);
   readonly pricingTemplates = signal<PricingTemplate[]>([]);
   readonly addingCustomer = signal(false);
 
+  readonly customerOptions = computed<SelectOption[]>(() =>
+    this.customers().map((c) => ({
+      value: c.id,
+      label: `${c.displayName} (${c.customerKind.toLowerCase()})`,
+    })),
+  );
+  readonly pricingOptions = computed<SelectOption[]>(() => [
+    { value: '', label: '— None / TBD —' },
+    ...this.pricingTemplates().map((t) => ({ value: t.id, label: t.name })),
+  ]);
+
+  readonly kindOptions: SelectOption[] = [
+    { value: 'SHEPHERD', label: 'Shepherd' },
+    { value: 'DESIGNER', label: 'Designer' },
+  ];
+
   customerId: string | null = null;
-  pricingArrangementId: string | null = null;
-  expectedWeightKg: number = 10;
-  slotDate: Date = new Date();
+  pricingArrangementId: string = '';
+  expectedWeightKg = 10;
+  slotDate = new Date().toISOString().slice(0, 10);
 
   newCustomerName = '';
   newCustomerKind: 'SHEPHERD' | 'DESIGNER' = 'SHEPHERD';
@@ -166,24 +145,26 @@ export class NewReservationComponent {
         this.newCustomerName = '';
         this.newCustomerEmail = '';
       },
-      error: (e) => this.snack.open('Failed to add: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      error: (e) => this.snack.show('Failed to add: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 
   save(): void {
     const tid = this.auth.activeTenantId();
     if (!tid || !this.customerId) return;
+    // pd-datepicker returns YYYY-MM-DD; convert to ISO datetime at noon UTC.
+    const slotIso = new Date(`${this.slotDate}T12:00:00Z`).toISOString();
     this.ops.createReservation(tid, {
       customerId: this.customerId,
-      pricingArrangementId: this.pricingArrangementId ?? undefined,
+      pricingArrangementId: this.pricingArrangementId || undefined,
       expectedWeightKg: this.expectedWeightKg,
-      slotStart: this.slotDate.toISOString(),
+      slotStart: slotIso,
     }).subscribe({
       next: () => {
-        this.snack.open('Reservation created', 'OK', { duration: 2000 });
+        this.snack.show('Reservation created', { durationMs: 2000 });
         this.router.navigate(['/ops/reservations']);
       },
-      error: (e) => this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      error: (e) => this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 }

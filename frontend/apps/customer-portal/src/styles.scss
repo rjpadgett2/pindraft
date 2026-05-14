@@ -3,27 +3,68 @@
 @include mat.elevation-classes();
 @include mat.app-background();
 
+/*
+ * Material theme — REQUIRED for Material 21 components to render. Without this,
+ * mat-card / mat-form-field / mat-button have no color/typography tokens and
+ * render invisible.
+ */
+html {
+  @include mat.theme((
+    color: mat.$azure-palette,
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+/* Pindraft design tokens. */
+@import '../../../libs/ui/src/lib/tokens.css';
+
+/*
+ * Customer-portal brand: terracotta + wool-white. Warm, craft, fiber-industry.
+ * The accent reads on woolen tags and yarn labels; the cream background is wool
+ * unfinished and the canvas of an undyed skein.
+ */
+:root {
+  --pd-brand-accent:        #b4654a;   /* terracotta */
+  --pd-brand-accent-hover:  #9d5439;
+  --pd-brand-accent-bg:     #fef4ec;   /* wool-white tinted */
+  --pd-brand-accent-strong: #8a4a32;   /* deep terracotta */
+  --pd-brand-text-on-accent: #ffffff;
+  /* Override app-wide background with the cream wool palette. */
+  --pd-color-bg-app: #faf7f2;
+}
+
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Helvetica Neue', sans-serif;
-  background: #fafafa;
-  color: #1a1a1a;
+  font-family: var(--pd-font-sans);
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  background: var(--pd-color-bg-app);
+  color: var(--pd-color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 * { box-sizing: border-box; }
 
 .page {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--pd-page-gutter-y) var(--pd-page-gutter-x);
 }
+
+/* LEGACY — pre-design-system classes. New screens use <pd-page-header>. */
 .page-title {
-  font-size: 24px;
-  font-weight: 500;
-  margin: 0 0 4px;
+  font-size: var(--pd-text-2xl);
+  line-height: var(--pd-leading-2xl);
+  font-weight: var(--pd-weight-semibold);
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--pd-space-1);
+  color: var(--pd-color-text);
 }
 .page-subtitle {
-  font-size: 14px;
-  color: #666;
-  margin: 0 0 24px;
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  color: var(--pd-color-text-muted);
+  margin: 0 0 var(--pd-space-6);
 }

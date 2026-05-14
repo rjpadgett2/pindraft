@@ -30,6 +30,13 @@ export const appRoutes: Routes = [
       import('./features/public/mill-detail.component').then((m) => m.PublicMillDetailComponent),
   },
 
+  // Public marketing landing — shepherds and designers land here before signing up.
+  {
+    path: 'welcome',
+    loadComponent: () =>
+      import('./features/welcome/welcome.component').then((m) => m.WelcomeComponent),
+  },
+
   // Auth gate
   {
     path: 'login',

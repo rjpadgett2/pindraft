@@ -1,0 +1,164 @@
+/*
+ * Pindraft design tokens — modern industrial / slate-blue + cool gray.
+ *
+ * USAGE: each app imports this once via its global styles.scss:
+ *   @import 'libs/ui/src/lib/tokens.css';
+ *
+ * Components reference tokens with var(--pd-…) — never hard-code hex values, font
+ * families, or spacing pixel literals in component styles. If a value isn't here,
+ * either it should be added or the component is using something one-off (which
+ * is a smell, not a feature).
+ *
+ * Naming follows Tailwind's slate/zinc style: -50 is lightest, -900 is darkest.
+ * Semantic tokens (text/surface/border/accent) sit on top of the palette and are
+ * what components SHOULD use. Avoid reaching directly into palette tokens from
+ * a component unless you need a one-off shade.
+ */
+
+:root {
+  /* ─── Palette (raw colors) ─────────────────────────────────────────────── */
+  --pd-slate-50:  #f8fafc;
+  --pd-slate-100: #f1f5f9;
+  --pd-slate-200: #e2e8f0;
+  --pd-slate-300: #cbd5e1;
+  --pd-slate-400: #94a3b8;
+  --pd-slate-500: #64748b;
+  --pd-slate-600: #475569;
+  --pd-slate-700: #334155;
+  --pd-slate-800: #1e293b;
+  --pd-slate-900: #0f172a;
+
+  --pd-blue-50:   #eff6ff;
+  --pd-blue-100:  #dbeafe;
+  --pd-blue-500:  #3b82f6;
+  --pd-blue-600:  #2563eb;
+  --pd-blue-700:  #1d4ed8;
+  --pd-blue-800:  #1e40af;
+
+  --pd-green-50:  #ecfdf5;
+  --pd-green-100: #d1fae5;
+  --pd-green-600: #059669;
+  --pd-green-700: #047857;
+  --pd-green-800: #065f46;
+
+  --pd-amber-50:  #fffbeb;
+  --pd-amber-100: #fef3c7;
+  --pd-amber-600: #d97706;
+  --pd-amber-700: #b45309;
+  --pd-amber-800: #92400e;
+
+  --pd-red-50:    #fef2f2;
+  --pd-red-100:   #fee2e2;
+  --pd-red-600:   #dc2626;
+  --pd-red-700:   #b91c1c;
+  --pd-red-800:   #991b1b;
+
+  /* ─── Warm "fiber-industry" palette ──────────────────────────────────────
+   * Cream, hay, terracotta, sage, moss. NOT semantic statuses; these are
+   * decorative accents for landing pages, brand identity, and any
+   * fiber-craft-coded surface. */
+  --pd-cream-50:       #faf7f2;   /* wool-white */
+  --pd-cream-100:      #f4ede0;   /* paper */
+  --pd-cream-200:      #e8dcc3;   /* parchment */
+
+  --pd-hay-300:        #e0c08a;   /* light hay */
+  --pd-hay-500:        #d4a96a;   /* hay */
+  --pd-hay-700:        #a37837;   /* deep hay / ochre */
+
+  --pd-terracotta-100: #fef4ec;
+  --pd-terracotta-500: #b4654a;
+  --pd-terracotta-700: #8a4a32;
+  --pd-terracotta-900: #4a2a1a;
+
+  --pd-sage-100:       #eef3ea;
+  --pd-sage-500:       #6b8559;
+  --pd-sage-700:       #587047;
+  --pd-sage-900:       #455837;
+
+  /* ─── Semantic surfaces ──────────────────────────────────────────────────
+   * Components SHOULD reference these, not raw palette colors. */
+  --pd-color-bg-app:          var(--pd-slate-50);       /* page background */
+  --pd-color-bg-surface:      #ffffff;                  /* cards, panels */
+  --pd-color-bg-sunken:       var(--pd-slate-100);      /* inset wells, code blocks */
+  --pd-color-bg-elevated:     #ffffff;                  /* dialogs, popovers */
+
+  --pd-color-border:          var(--pd-slate-200);      /* default hairline */
+  --pd-color-border-strong:   var(--pd-slate-300);      /* emphasized divider */
+  --pd-color-border-focus:    var(--pd-blue-600);       /* input focus ring */
+
+  --pd-color-text:            var(--pd-slate-900);      /* primary body text */
+  --pd-color-text-muted:      var(--pd-slate-500);      /* meta, hints */
+  --pd-color-text-subtle:     var(--pd-slate-400);      /* placeholder, disabled */
+  --pd-color-text-inverse:    #ffffff;                  /* on dark backgrounds */
+  --pd-color-text-link:       var(--pd-blue-700);
+
+  --pd-color-accent:          var(--pd-blue-700);       /* primary brand */
+  --pd-color-accent-hover:    var(--pd-blue-800);
+  --pd-color-accent-bg:       var(--pd-blue-50);
+
+  /* ─── Status tones ─── used by StatusChip for any state machine value.
+   * Each tone is a (background, text) pair tuned for ~AA contrast at 11px. */
+  --pd-tone-info-bg:          var(--pd-blue-100);
+  --pd-tone-info-text:        var(--pd-blue-800);
+  --pd-tone-success-bg:       var(--pd-green-100);
+  --pd-tone-success-text:     var(--pd-green-800);
+  --pd-tone-warning-bg:       var(--pd-amber-100);
+  --pd-tone-warning-text:     var(--pd-amber-800);
+  --pd-tone-danger-bg:        var(--pd-red-100);
+  --pd-tone-danger-text:      var(--pd-red-800);
+  --pd-tone-neutral-bg:       var(--pd-slate-100);
+  --pd-tone-neutral-text:     var(--pd-slate-700);
+
+  /* ─── Typography ─────────────────────────────────────────────────────────
+   * System stack — no web fonts loaded for now, keeps initial paint fast.
+   * If/when a custom face arrives (Inter, Söhne, etc.), swap here. */
+  --pd-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                  Arial, sans-serif;
+  --pd-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                  "Liberation Mono", monospace;
+
+  /* Type scale — pick from these, don't invent. */
+  --pd-text-xs:    11px;    --pd-leading-xs:   16px;
+  --pd-text-sm:    13px;    --pd-leading-sm:   18px;
+  --pd-text-base:  14px;    --pd-leading-base: 20px;
+  --pd-text-md:    15px;    --pd-leading-md:   22px;
+  --pd-text-lg:    18px;    --pd-leading-lg:   26px;
+  --pd-text-xl:    22px;    --pd-leading-xl:   30px;
+  --pd-text-2xl:   28px;    --pd-leading-2xl:  36px;
+
+  --pd-weight-regular:  400;
+  --pd-weight-medium:   500;
+  --pd-weight-semibold: 600;
+
+  /* ─── Spacing scale (4px-based) ─────────────────────────────────────────── */
+  --pd-space-0:  0px;
+  --pd-space-1:  4px;
+  --pd-space-2:  8px;
+  --pd-space-3:  12px;
+  --pd-space-4:  16px;
+  --pd-space-5:  20px;
+  --pd-space-6:  24px;
+  --pd-space-8:  32px;
+  --pd-space-10: 40px;
+  --pd-space-12: 48px;
+  --pd-space-16: 64px;
+
+  /* ─── Radii ─────────────────────────────────────────────────────────────── */
+  --pd-radius-sm:   4px;     /* chips, small inputs */
+  --pd-radius-md:   6px;     /* buttons, inputs */
+  --pd-radius-lg:   8px;     /* cards, panels */
+  --pd-radius-xl:   12px;    /* prominent modules */
+  --pd-radius-full: 9999px;
+
+  /* ─── Elevation ──────────────────────────────────────────────────────────
+   * Two shadows — flat surfaces and slightly lifted. We deliberately avoid
+   * the Material drop-shadow ladder; modern-industrial reads better flat. */
+  --pd-shadow-sm: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --pd-shadow-md: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  /* ─── Layout ─────────────────────────────────────────────────────────────
+   * Page container, used by .page in app styles + PageHeader. */
+  --pd-page-max-width: 1200px;
+  --pd-page-gutter-x:  24px;
+  --pd-page-gutter-y:  24px;
+}

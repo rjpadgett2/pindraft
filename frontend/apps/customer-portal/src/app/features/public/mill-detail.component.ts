@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -14,7 +12,7 @@ import { PublicHeaderComponent } from './public-header.component';
   selector: 'customer-mill-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatIconModule, PublicHeaderComponent],
+  imports: [RouterLink, MatIconModule, PublicHeaderComponent],
   template: `
     <customer-public-header />
     <div class="public-page">

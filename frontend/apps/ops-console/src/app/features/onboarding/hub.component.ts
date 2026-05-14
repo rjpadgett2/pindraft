@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { SetupCategory, SetupStatusResponse } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
-import { StatusBadgeComponent } from '@pindraft/ui';
+import {
+  ButtonComponent, CardComponent, PageHeaderComponent,
+  SnackbarService, StatusBadgeComponent,
+} from '@pindraft/ui';
 import { OnboardingService } from './services/onboarding.service';
 
 /**
@@ -18,13 +18,15 @@ import { OnboardingService } from './services/onboarding.service';
   selector: 'ops-onboarding-hub',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatButtonModule, StatusBadgeComponent, RouterLink],
+  imports: [
+    RouterLink,
+    ButtonComponent, CardComponent, PageHeaderComponent, StatusBadgeComponent,
+  ],
   template: `
     <div class="page">
-      <h1 class="page-title">Get your mill ready</h1>
-      <p class="page-subtitle">
-        Complete the four required steps to start accepting reservations.
-      </p>
+      <pd-page-header
+        title="Get your mill ready"
+        subtitle="Complete the four required steps to start accepting reservations." />
 
       @if (status(); as s) {
         <div class="progress">
@@ -35,46 +37,40 @@ import { OnboardingService } from './services/onboarding.service';
         <h2 class="section-title">Required</h2>
         <div class="grid">
           @for (cat of s.required; track cat.key) {
-            <mat-card class="cat-card">
-              <mat-card-content>
-                <header>
-                  <strong>{{ cat.label }}</strong>
-                  <pd-status-badge [status]="cat.status" [label]="statusLabel(cat.status)" />
-                </header>
-                <p class="summary">{{ cat.summary }}</p>
-                @if (cat.whatsMissing) {
-                  <p class="missing">{{ cat.whatsMissing }}</p>
-                }
-                @if (linkFor(cat.key); as link) {
-                  <button mat-stroked-button [routerLink]="link">
-                    {{ cat.status === 'DONE' ? 'Review' : 'Continue' }}
-                  </button>
-                }
-              </mat-card-content>
-            </mat-card>
+            <pd-card class="cat-card">
+              <header>
+                <strong>{{ cat.label }}</strong>
+                <pd-status-badge [status]="cat.status" [label]="statusLabel(cat.status)" />
+              </header>
+              <p class="summary">{{ cat.summary }}</p>
+              @if (cat.whatsMissing) {
+                <p class="missing">{{ cat.whatsMissing }}</p>
+              }
+              @if (linkFor(cat.key); as link) {
+                <pd-button variant="secondary" size="sm" [routerLink]="link">
+                  {{ cat.status === 'DONE' ? 'Review' : 'Continue' }}
+                </pd-button>
+              }
+            </pd-card>
           }
         </div>
 
         <h2 class="section-title">Optional — can do later</h2>
         <div class="grid optional">
           @for (cat of s.optional; track cat.key) {
-            <mat-card class="cat-card compact">
-              <mat-card-content>
-                <strong>{{ cat.label }}</strong>
-                <p class="summary">{{ cat.summary }}</p>
-              </mat-card-content>
-            </mat-card>
+            <pd-card class="cat-card compact">
+              <strong>{{ cat.label }}</strong>
+              <p class="summary">{{ cat.summary }}</p>
+            </pd-card>
           }
         </div>
 
         <h3 class="section-title">Team</h3>
-        <mat-card class="cat-card compact">
-          <mat-card-content>
-            <strong>Operator invitations</strong>
-            <p class="summary">Invite admins and operators to this mill. Optional — solo admins can skip.</p>
-            <button mat-stroked-button routerLink="/setup/team">Manage team</button>
-          </mat-card-content>
-        </mat-card>
+        <pd-card class="cat-card compact">
+          <strong>Operator invitations</strong>
+          <p class="summary">Invite admins and operators to this mill. Optional — solo admins can skip.</p>
+          <pd-button variant="secondary" size="sm" routerLink="/setup/team">Manage team</pd-button>
+        </pd-card>
 
         <div class="go-live">
           <div>
@@ -89,38 +85,40 @@ import { OnboardingService } from './services/onboarding.service';
               }
             </p>
           </div>
-          <button mat-flat-button color="primary"
+          <pd-button variant="primary"
               [disabled]="!s.readyToGoLive || s.tenantStatus === 'LIVE'"
               (click)="goLive()">
             {{ s.tenantStatus === 'LIVE' ? 'Live' : 'Go live' }}
-          </button>
+          </pd-button>
         </div>
       } @else if (loading()) {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
+    .page { padding: 24px 32px; }
     .progress { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-    .progress .bar { flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
-    .progress .fill { height: 100%; background: #2563eb; transition: width 0.3s; }
-    .progress span { font-size: 13px; color: #666; }
-    .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin: 24px 0 12px; }
+    .progress .bar { flex: 1; height: 6px; background: var(--pd-color-border, #e5e7eb); border-radius: 3px; overflow: hidden; }
+    .progress .fill { height: 100%; background: var(--pd-brand-accent, #2563eb); transition: width 0.3s; }
+    .progress span { font-size: 13px; color: var(--pd-color-muted, #666); }
+    .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--pd-color-muted, #666); margin: 24px 0 12px; font-weight: 600; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 24px; }
     .grid.optional { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
     .cat-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .cat-card .summary { font-size: 13px; color: #666; margin: 6px 0 12px; }
-    .cat-card .missing { font-size: 12px; color: #b91c1c; margin: 0 0 12px; }
-    .cat-card.compact .summary { margin-bottom: 0; }
-    .go-live { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #f3f4f6; border-radius: 8px; margin-top: 24px; }
-    .go-live p { font-size: 13px; color: #666; margin: 4px 0 0; }
+    .cat-card .summary { font-size: 13px; color: var(--pd-color-muted, #666); margin: 6px 0 12px; }
+    .cat-card .missing { font-size: 12px; color: var(--pd-color-danger-text, #b91c1c); margin: 0 0 12px; }
+    .cat-card.compact .summary { margin-bottom: 8px; }
+    .go-live { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; background: #f3f4f6; border-radius: 8px; margin-top: 24px; }
+    .go-live p { font-size: 13px; color: var(--pd-color-muted, #666); margin: 4px 0 0; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
   `],
 })
 export class OnboardingHubComponent {
   private onboarding = inject(OnboardingService);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly status = signal<SetupStatusResponse | null>(null);
@@ -169,11 +167,9 @@ export class OnboardingHubComponent {
     this.onboarding.goLive(tid).subscribe({
       next: (s) => {
         this.status.set(s);
-        this.snack.open('Mill is now live', 'OK', { duration: 3000 });
+        this.snack.show('Mill is now live', { durationMs: 3000 });
       },
-      error: (e) => this.snack.open(
-        'Go-live failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'
-      ),
+      error: (e) => this.snack.show('Go-live failed: ' + (e?.error?.detail ?? 'unknown'), { durationMs: 4000 }),
     });
   }
 }

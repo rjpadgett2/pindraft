@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Customer, QueueEntry, StageQueueSummary } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
-import { forkJoin, switchMap } from 'rxjs';
+import {
+  ButtonComponent, CardComponent, EmptyStateComponent,
+  PageHeaderComponent, TableComponent,
+} from '@pindraft/ui';
+import { forkJoin } from 'rxjs';
 import { OperationsService, OptimizerEntry } from './services/operations.service';
 
 /**
@@ -16,24 +17,27 @@ import { OperationsService, OptimizerEntry } from './services/operations.service
   selector: 'ops-queue-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatButtonModule, MatTableModule, RouterLink],
+  imports: [
+    RouterLink,
+    ButtonComponent, CardComponent, EmptyStateComponent,
+    PageHeaderComponent, TableComponent,
+  ],
   template: `
     <div class="page">
-      <h1 class="page-title">Queues</h1>
-      <p class="page-subtitle">Lots currently waiting at each stage, sorted by dwell time.</p>
+      <pd-page-header
+        title="Queues"
+        subtitle="Lots currently waiting at each stage, sorted by dwell time." />
 
       @if (!loading()) {
         <div class="summary-grid">
           @for (s of summaries(); track s.stageId) {
-            <mat-card class="summary-card"
+            <pd-card class="summary-card"
                 [class.selected]="s.stageId === selectedStageId()"
                 (click)="select(s.stageId)">
-              <mat-card-content>
-                <small>{{ s.displayName }}</small>
-                <div class="count">{{ s.waitingCount }}</div>
-                <div class="hint">waiting</div>
-              </mat-card-content>
-            </mat-card>
+              <small>{{ s.displayName }}</small>
+              <div class="count">{{ s.waitingCount }}</div>
+              <div class="hint">waiting</div>
+            </pd-card>
           }
         </div>
 
@@ -41,10 +45,10 @@ import { OperationsService, OptimizerEntry } from './services/operations.service
           <div class="queue-header">
             <h2 class="section">{{ selectedStageName() }} queue</h2>
             <div class="view-toggle">
-              <button mat-button [class.active]="!showOptimizer()" (click)="showOptimizer.set(false)">
+              <button [class.active]="!showOptimizer()" (click)="showOptimizer.set(false)">
                 FIFO (by dwell)
               </button>
-              <button mat-button [class.active]="showOptimizer()" (click)="loadOptimizer()">
+              <button [class.active]="showOptimizer()" (click)="loadOptimizer()">
                 Optimizer suggestion
               </button>
             </div>
@@ -52,94 +56,90 @@ import { OperationsService, OptimizerEntry } from './services/operations.service
 
           @if (showOptimizer()) {
             @if (optimizerEntries().length === 0) {
-              <div class="empty">No proposal — queue is empty.</div>
+              <pd-empty-state title="No proposal" description="Queue is empty." />
             } @else {
               <p class="muted">Groups same-breed lots together to minimize equipment changeovers; orders groups by longest-dwell so nothing gets starved. Operator action is canonical.</p>
-              <table mat-table [dataSource]="optimizerEntries()">
-                <ng-container matColumnDef="pos">
-                  <th mat-header-cell *matHeaderCellDef>#</th>
-                  <td mat-cell *matCellDef="let e"><strong>{{ e.proposedPosition }}</strong></td>
-                </ng-container>
-                <ng-container matColumnDef="group">
-                  <th mat-header-cell *matHeaderCellDef>Breed</th>
-                  <td mat-cell *matCellDef="let e"><span class="chip">{{ e.groupKey }}</span></td>
-                </ng-container>
-                <ng-container matColumnDef="customer">
-                  <th mat-header-cell *matHeaderCellDef>Customer</th>
-                  <td mat-cell *matCellDef="let e">{{ customerName(e.customerId) }}</td>
-                </ng-container>
-                <ng-container matColumnDef="dwell">
-                  <th mat-header-cell *matHeaderCellDef>Dwell</th>
-                  <td mat-cell *matCellDef="let e" [class.long]="e.dwellSeconds > 86400">
-                    {{ formatDwell(e.dwellSeconds) }}
-                  </td>
-                </ng-container>
-                <ng-container matColumnDef="reasoning">
-                  <th mat-header-cell *matHeaderCellDef>Why</th>
-                  <td mat-cell *matCellDef="let e" class="muted reasoning">{{ e.reasoning }}</td>
-                </ng-container>
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef></th>
-                  <td mat-cell *matCellDef="let e">
-                    <a mat-stroked-button [routerLink]="['/ops/lots', e.lotId]">Open</a>
-                  </td>
-                </ng-container>
-                <tr mat-header-row *matHeaderRowDef="optCols"></tr>
-                <tr mat-row *matRowDef="let row; columns: optCols"></tr>
-              </table>
+              <pd-table>
+                <thead>
+                  <tr>
+                    <th class="pd-table__num">#</th>
+                    <th>Breed</th>
+                    <th>Customer</th>
+                    <th class="pd-table__num">Dwell</th>
+                    <th>Why</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (e of optimizerEntries(); track e.lotId) {
+                    <tr>
+                      <td class="pd-table__num"><strong>{{ e.proposedPosition }}</strong></td>
+                      <td><span class="chip">{{ e.groupKey }}</span></td>
+                      <td>{{ customerName(e.customerId) }}</td>
+                      <td class="pd-table__num" [class.long]="e.dwellSeconds > 86400">
+                        {{ formatDwell(e.dwellSeconds) }}
+                      </td>
+                      <td class="muted reasoning">{{ e.reasoning }}</td>
+                      <td>
+                        <pd-button variant="ghost" size="sm" [routerLink]="['/ops/lots', e.lotId]">Open</pd-button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </pd-table>
             }
           } @else if (queueEntries().length === 0) {
-            <div class="empty">Nothing waiting at this stage.</div>
+            <pd-empty-state title="Nothing waiting" description="This stage has no waiting lots." />
           } @else {
-            <table mat-table [dataSource]="queueEntries()">
-              <ng-container matColumnDef="customer">
-                <th mat-header-cell *matHeaderCellDef>Customer</th>
-                <td mat-cell *matCellDef="let e">{{ customerName(e.customerId) }}</td>
-              </ng-container>
-              <ng-container matColumnDef="weight">
-                <th mat-header-cell *matHeaderCellDef>Weight</th>
-                <td mat-cell *matCellDef="let e">{{ e.weightInKg }} kg</td>
-              </ng-container>
-              <ng-container matColumnDef="dwell">
-                <th mat-header-cell *matHeaderCellDef>Dwell</th>
-                <td mat-cell *matCellDef="let e" [class.long]="e.dwellSeconds > 86400">
-                  {{ formatDwell(e.dwellSeconds) }}
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef></th>
-                <td mat-cell *matCellDef="let e">
-                  <a mat-stroked-button [routerLink]="['/ops/lots', e.lotId]">Open</a>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="cols"></tr>
-              <tr mat-row *matRowDef="let row; columns: cols"></tr>
-            </table>
+            <pd-table>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th class="pd-table__num">Weight</th>
+                  <th class="pd-table__num">Dwell</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of queueEntries(); track e.lotId) {
+                  <tr>
+                    <td>{{ customerName(e.customerId) }}</td>
+                    <td class="pd-table__num">{{ e.weightInKg }} kg</td>
+                    <td class="pd-table__num" [class.long]="e.dwellSeconds > 86400">
+                      {{ formatDwell(e.dwellSeconds) }}
+                    </td>
+                    <td>
+                      <pd-button variant="ghost" size="sm" [routerLink]="['/ops/lots', e.lotId]">Open</pd-button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </pd-table>
           }
         }
       } @else {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
+    .page { padding: 24px 32px; }
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 24px; }
     .summary-card { cursor: pointer; transition: all 0.15s; }
-    .summary-card:hover { background: #f9fafb; }
-    .summary-card.selected { background: #dbeafe; border: 2px solid #2563eb; }
-    .summary-card small { color: #666; font-size: 12px; }
-    .summary-card .count { font-size: 28px; font-weight: 500; line-height: 1; margin: 6px 0; }
-    .summary-card .hint { font-size: 11px; color: #9ca3af; }
-    .section { font-size: 14px; font-weight: 500; margin: 24px 0 12px; }
+    .summary-card:hover { background: var(--pd-color-bg-sunken, #f9fafb); }
+    .summary-card.selected { background: var(--pd-color-info-bg, #dbeafe); border-color: var(--pd-brand-accent, #2563eb); border-width: 2px; }
+    .summary-card small { color: var(--pd-color-muted, #666); font-size: 12px; }
+    .summary-card .count { font-size: 28px; font-weight: 600; line-height: 1; margin: 6px 0; }
+    .summary-card .hint { font-size: 11px; color: var(--pd-color-muted, #9ca3af); }
+    .section { font-size: 14px; font-weight: 600; margin: 24px 0 12px; color: var(--pd-color-text, #111); }
     .queue-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .view-toggle { display: flex; gap: 4px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 2px; }
-    .view-toggle button.active { background: #1a1a1a; color: white; }
-    .muted { color: #6b7280; font-size: 13px; margin: 0 0 8px; }
+    .view-toggle { display: flex; gap: 4px; border: 1px solid var(--pd-color-border, #e5e7eb); border-radius: 6px; padding: 2px; background: white; }
+    .view-toggle button { background: transparent; border: 0; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: 4px; color: var(--pd-color-text, #1a1a1a); }
+    .view-toggle button.active { background: var(--pd-color-text, #1a1a1a); color: white; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; margin: 0 0 8px; }
     .reasoning { font-size: 12px; max-width: 320px; }
-    .chip { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; font-family: ui-monospace, monospace; }
-    .empty { padding: 32px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; }
-    table { width: 100%; background: white; }
-    td.long { color: #b91c1c; font-weight: 500; }
+    .chip { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; font-family: var(--pd-font-mono, ui-monospace, monospace); }
+    td.long { color: var(--pd-color-danger-text, #b91c1c); font-weight: 600; }
   `],
 })
 export class QueueDashboardComponent {
@@ -153,8 +153,6 @@ export class QueueDashboardComponent {
   readonly optimizerEntries = signal<OptimizerEntry[]>([]);
   readonly showOptimizer = signal(false);
   readonly selectedStageId = signal<string | null>(null);
-  readonly cols = ['customer', 'weight', 'dwell', 'actions'];
-  readonly optCols = ['pos', 'group', 'customer', 'dwell', 'reasoning', 'actions'];
 
   readonly selectedStageName = computed(() =>
     this.summaries().find((s) => s.stageId === this.selectedStageId())?.displayName ?? ''

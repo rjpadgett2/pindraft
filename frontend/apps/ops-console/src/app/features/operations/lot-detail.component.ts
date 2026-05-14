@@ -1,218 +1,291 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Customer, LotDetailFull, WorkflowStage } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent,
+  EmptyStateComponent,
+  InputComponent,
+  KeyValueGridComponent,
+  KvComponent,
+  PageHeaderComponent,
+  SelectComponent,
+  SelectOption,
+  SnackbarService,
+  StatusChipComponent,
+  type Tone,
+} from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from '../onboarding/services/onboarding.service';
 import { LotHistoryTimelineComponent } from './lot-history-timeline.component';
-import { OperationsService } from './services/operations.service';
 import { FiberTest, FiberTestsService, FiberTestType } from './services/fiber-tests.service';
-import { MatSelectModule } from '@angular/material/select';
-import { DatePipe } from '@angular/common';
+import { OperationsService } from './services/operations.service';
 
 /**
- * Lot detail with full context: lot facts, customer, pricing snapshot, fleeces,
- * stage history timeline (extracted into child), and a transition action.
+ * Lot detail — the most-used operator surface. Composed against the @pindraft/ui
+ * primitives: pd-page-header for the top, pd-key-value-grid for lot metadata,
+ * pd-status-chip for lifecycle state, pd-empty-state for the no-tests case.
+ * All visual values come from design tokens (var(--pd-…)) so theming or design
+ * tuning happens in libs/ui rather than here.
  */
 @Component({
   selector: 'ops-lot-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink,
-    MatCardModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule,
-    LotHistoryTimelineComponent, DatePipe
+    FormsModule, RouterLink, DatePipe,
+    LotHistoryTimelineComponent,
+    ButtonComponent, EmptyStateComponent, InputComponent,
+    KeyValueGridComponent, KvComponent, PageHeaderComponent,
+    SelectComponent, StatusChipComponent,
   ],
   template: `
     <div class="page">
       <a routerLink="/ops/reservations" class="back">← Back</a>
 
       @if (detail(); as d) {
-        <h1 class="page-title">Lot {{ d.lot.id.substring(0, 8) }}</h1>
-        <p class="page-subtitle">{{ customerName() }} — created {{ d.lot.createdAt | date:'medium' }}</p>
+        <pd-page-header
+          [title]="'Lot ' + d.lot.id.substring(0, 8)"
+          [subtitle]="customerName() + ' · created ' + (d.lot.createdAt | date:'medium')">
+          <pd-status-chip [label]="d.lot.status" [tone]="statusTone()" />
+        </pd-page-header>
 
-        <div class="grid">
-          <mat-card><mat-card-content>
-            <small>Intake weight</small>
-            <div class="big">{{ d.lot.weightIntakeKg }} kg</div>
-          </mat-card-content></mat-card>
-          <mat-card><mat-card-content>
-            <small>Current stage</small>
-            <div class="big">{{ currentStageName() }}</div>
-          </mat-card-content></mat-card>
-          <mat-card><mat-card-content>
-            <small>Status</small>
-            <div class="big">{{ d.lot.status }}</div>
-          </mat-card-content></mat-card>
-          <mat-card><mat-card-content>
-            <small>Pricing</small>
-            <div>{{ pricingSummary() }}</div>
-          </mat-card-content></mat-card>
-        </div>
+        <section class="meta">
+          <pd-key-value-grid>
+            <pd-kv label="Intake weight">
+              <span class="numeric">{{ d.lot.weightIntakeKg }} kg</span>
+            </pd-kv>
+            <pd-kv label="Current stage">{{ currentStageName() }}</pd-kv>
+            <pd-kv label="Pricing">
+              <span class="mono">{{ pricingSummary() }}</span>
+            </pd-kv>
+            <pd-kv label="Lot ID">
+              <span class="mono mono--id">{{ d.lot.id }}</span>
+            </pd-kv>
+          </pd-key-value-grid>
+        </section>
 
-        <h2 class="section">Stage history</h2>
+        <h2 class="section-title">Stage history</h2>
         <ops-lot-history-timeline [events]="d.history" [stages]="stages()" />
 
-        <h2 class="section">Fleeces</h2>
-        <ul class="fleeces">
+        <h2 class="section-title">Fleeces</h2>
+        <ul class="list">
           @for (f of d.fleeces; track f.id) {
-            <li>
+            <li class="list__item">
               <strong>{{ f.sourceAnimalName || 'Unnamed' }}</strong>
-              @if (f.breedCode) { <span class="chip">{{ f.breedCode }}</span> }
-              <span class="weight">{{ f.weightKg }} kg</span>
-              @if (f.notes) { <em>{{ f.notes }}</em> }
+              @if (f.breedCode) { <span class="tag">{{ f.breedCode }}</span> }
+              <span class="numeric meta-right">{{ f.weightKg }} kg</span>
+              @if (f.notes) { <em class="dim">— {{ f.notes }}</em> }
             </li>
           }
         </ul>
 
         @if (canTransition()) {
-          <h2 class="section">Move to next stage</h2>
-          <mat-card><mat-card-content>
-            <p>Next: <strong>{{ nextStageName() }}</strong></p>
-            <div class="transition-form">
-              <mat-form-field appearance="outline">
-                <mat-label>Weight out (kg)</mat-label>
-                <input matInput type="number" min="0" step="0.1" [(ngModel)]="weightOut" />
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="grow">
-                <mat-label>Notes (optional)</mat-label>
-                <input matInput [(ngModel)]="notes" />
-              </mat-form-field>
-              <button mat-flat-button color="primary"
+          <h2 class="section-title">Move to next stage</h2>
+          <div class="action-panel">
+            <p class="action-panel__lead">Next: <strong>{{ nextStageName() }}</strong></p>
+            <div class="form-row">
+              <pd-input label="Weight out (kg)" type="number" [(ngModel)]="weightOut" />
+              <pd-input class="grow" label="Notes (optional)" [(ngModel)]="notes" />
+              <pd-button variant="primary"
                   [disabled]="!canSaveTransition() || transitioning()" (click)="transition()">
                 {{ transitioning() ? 'Moving…' : 'Move to ' + nextStageName() }}
-              </button>
+              </pd-button>
             </div>
-          </mat-card-content></mat-card>
+          </div>
         }
 
-        <h2 class="section">Fiber tests</h2>
-        <mat-card><mat-card-content>
+        <h2 class="section-title">Fiber tests</h2>
+        <div class="action-panel">
           @if (fiberTests().length === 0) {
-            <p class="muted">No tests attached yet.</p>
+            <pd-empty-state
+              title="No tests attached yet"
+              message="Record micron, comfort factor, or staple length here. Results show up in the shepherd's lifetime micron view." />
           } @else {
-            <ul class="tests">
+            <ul class="list">
               @for (t of fiberTests(); track t.id) {
-                <li>
+                <li class="list__item">
                   <strong>{{ formatTestType(t.testType) }}</strong>
                   @if (t.resultNumeric !== null) {
-                    <span class="result">{{ t.resultNumeric }}{{ t.resultUnit ? ' ' + t.resultUnit : '' }}</span>
+                    <span class="numeric numeric--strong">{{ t.resultNumeric }}{{ t.resultUnit ? ' ' + t.resultUnit : '' }}</span>
                   }
-                  @if (t.instrument) { <span class="chip">{{ t.instrument }}</span> }
-                  <span class="weight">{{ t.testedAt | date:'mediumDate' }}</span>
+                  @if (t.instrument) { <span class="tag">{{ t.instrument }}</span> }
+                  <span class="dim meta-right">{{ t.testedAt | date:'mediumDate' }}</span>
                 </li>
               }
             </ul>
           }
-          <div class="test-form">
-            <mat-form-field appearance="outline">
-              <mat-label>Test</mat-label>
-              <mat-select [(value)]="newTest.testType">
-                <mat-option value="MICRON_DIAMETER">Micron diameter</mat-option>
-                <mat-option value="COMFORT_FACTOR">Comfort factor</mat-option>
-                <mat-option value="STAPLE_LENGTH">Staple length</mat-option>
-                <mat-option value="IWTO_47_DISTRIBUTION">IWTO 47 distribution</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Instrument</mat-label>
-              <input matInput [(ngModel)]="newTest.instrument" placeholder="FibreLux / OFDA2000 / lab" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Result</mat-label>
-              <input matInput type="number" step="0.01" [(ngModel)]="newTest.resultNumeric" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Unit</mat-label>
-              <input matInput [(ngModel)]="newTest.resultUnit" placeholder="µm / % / mm" />
-            </mat-form-field>
-            <button mat-flat-button color="primary"
+          <div class="form-row form-row--tight">
+            <pd-select label="Test" [(ngModel)]="newTest.testType" [options]="testTypeOptions" />
+            <pd-input label="Instrument" [(ngModel)]="newTest.instrument" />
+            <pd-input label="Result" type="number" [(ngModel)]="newTest.resultNumeric" />
+            <pd-input label="Unit" [(ngModel)]="newTest.resultUnit" />
+            <pd-button variant="primary"
                     [disabled]="!canAttachTest() || attachingTest()" (click)="attachTest()">
               {{ attachingTest() ? 'Saving…' : 'Attach test' }}
-            </button>
+            </pd-button>
           </div>
-        </mat-card-content></mat-card>
+        </div>
 
-        @if (detail()?.lot?.status === 'ACTIVE') {
-          <h2 class="section">Complete this lot</h2>
-          <mat-card><mat-card-content>
-            <p class="muted">Closes the open stage event with a final weight and auto-generates a draft invoice (unless this lot is pool-merged).</p>
-            <div class="transition-form">
-              <mat-form-field appearance="outline">
-                <mat-label>Final weight (kg, optional)</mat-label>
-                <input matInput type="number" min="0" step="0.1" [(ngModel)]="completeWeight" />
-              </mat-form-field>
-              <button mat-flat-button color="primary"
+        @if (d.lot.status === 'ACTIVE') {
+          <h2 class="section-title">Complete this lot</h2>
+          <div class="action-panel">
+            <p class="action-panel__lead dim">Closes the open stage event with a final weight and auto-generates a draft invoice (unless this lot is pool-merged).</p>
+            <div class="form-row">
+              <pd-input label="Final weight (kg, optional)" type="number" [(ngModel)]="completeWeight" />
+              <pd-button variant="primary"
                   [disabled]="completing()" (click)="complete()">
                 {{ completing() ? 'Completing…' : 'Mark complete' }}
-              </button>
+              </pd-button>
             </div>
-          </mat-card-content></mat-card>
+          </div>
 
-          <h2 class="section">Split this lot</h2>
-          <mat-card><mat-card-content>
-            <p class="muted">The parent lot is marked complete; each child inherits the pricing snapshot and continues from the current stage. Lineage is recorded.</p>
+          <h2 class="section-title">Split this lot</h2>
+          <div class="action-panel">
+            <p class="action-panel__lead dim">The parent lot is marked complete; each child inherits the pricing snapshot and continues from the current stage. Lineage is recorded.</p>
             <div class="split-rows">
               @for (c of splitChildren; track $index) {
-                <div class="split-row">
-                  <mat-form-field appearance="outline">
-                    <mat-label>Child #{{ $index + 1 }} weight (kg)</mat-label>
-                    <input matInput type="number" min="0" step="0.1" [(ngModel)]="c.weightKg" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="grow">
-                    <mat-label>Notes</mat-label>
-                    <input matInput [(ngModel)]="c.notes" />
-                  </mat-form-field>
+                <div class="form-row">
+                  <pd-input [label]="'Child #' + ($index + 1) + ' weight (kg)'" type="number" [(ngModel)]="c.weightKg" />
+                  <pd-input class="grow" label="Notes" [(ngModel)]="c.notes" />
                   @if (splitChildren.length > 2) {
-                    <button mat-icon-button (click)="removeSplitChild($index)" aria-label="Remove">
-                      <span style="font-size:18px;">×</span>
-                    </button>
+                    <pd-button variant="ghost" size="sm" (click)="removeSplitChild($index)" aria-label="Remove child">
+                      ×
+                    </pd-button>
                   }
                 </div>
               }
             </div>
             <div class="split-actions">
-              <button mat-stroked-button (click)="addSplitChild()">+ Add child</button>
-              <button mat-flat-button color="primary"
+              <pd-button variant="secondary" (click)="addSplitChild()">+ Add child</pd-button>
+              <pd-button variant="primary"
                   [disabled]="!canSplit() || splitting()" (click)="split()">
                 {{ splitting() ? 'Splitting…' : 'Split into ' + splitChildren.length + ' lots' }}
-              </button>
+              </pd-button>
             </div>
-          </mat-card-content></mat-card>
+          </div>
         }
-      } @else if (loading()) { <p>Loading…</p> }
+      } @else if (loading()) {
+        <p class="dim">Loading…</p>
+      }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0 24px; }
-    .grid small { color: #666; font-size: 12px; }
-    .grid .big { font-size: 18px; font-weight: 500; margin-top: 4px; }
-    .section { font-size: 14px; font-weight: 500; margin: 24px 0 12px; }
-    .fleeces { list-style: none; padding: 0; margin: 0; }
-    .fleeces li { padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; font-size: 13px; }
-    .fleeces .chip { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; }
-    .fleeces .weight { margin-left: auto; color: #666; }
-    .transition-form { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
-    .transition-form .grow { flex: 1; min-width: 200px; }
-    .muted { color: #6b7280; font-size: 13px; margin: 0 0 12px; }
-    .split-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-    .split-row { display: flex; gap: 12px; align-items: center; }
-    .split-row .grow { flex: 1; min-width: 180px; }
-    .split-actions { display: flex; gap: 12px; margin-top: 12px; }
-    .tests { list-style: none; padding: 0; margin: 0 0 12px; }
-    .tests li { padding: 8px 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; font-size: 13px; }
-    .tests .chip { font-size: 11px; padding: 2px 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; }
-    .tests .weight { margin-left: auto; color: #666; }
-    .tests .result { font-weight: 500; font-family: ui-monospace, monospace; color: #1a1a1a; }
-    .test-form { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
-    .test-form mat-form-field { min-width: 140px; }
+    /*
+     * Local rules only — anything that could be reused belongs in @pindraft/ui.
+     * Every color / size / spacing here goes through a token var(--pd-…).
+     */
+
+    .back {
+      display: inline-block;
+      margin-bottom: var(--pd-space-3);
+      font-size: var(--pd-text-sm);
+      color: var(--pd-color-text-link);
+      text-decoration: none;
+    }
+    .back:hover { text-decoration: underline; }
+
+    .meta {
+      margin: var(--pd-space-4) 0 var(--pd-space-8);
+      padding: var(--pd-space-5) var(--pd-space-6);
+      background: var(--pd-color-bg-surface);
+      border: 1px solid var(--pd-color-border);
+      border-radius: var(--pd-radius-lg);
+    }
+
+    .section-title {
+      font-family: var(--pd-font-sans);
+      font-size: var(--pd-text-xs);
+      line-height: var(--pd-leading-xs);
+      font-weight: var(--pd-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--pd-color-text-muted);
+      margin: var(--pd-space-8) 0 var(--pd-space-3);
+    }
+
+    /* Reusable inline atoms — likely candidates for promotion to libs/ui later */
+    .numeric { font-variant-numeric: tabular-nums; }
+    .numeric--strong { font-weight: var(--pd-weight-medium); font-family: var(--pd-font-mono); color: var(--pd-color-text); }
+    .mono { font-family: var(--pd-font-mono); font-size: var(--pd-text-sm); }
+    .mono--id { color: var(--pd-color-text-muted); word-break: break-all; }
+    .dim { color: var(--pd-color-text-muted); }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px var(--pd-space-2);
+      background: var(--pd-color-bg-sunken);
+      border: 1px solid var(--pd-color-border);
+      border-radius: var(--pd-radius-sm);
+      font-family: var(--pd-font-mono);
+      font-size: var(--pd-text-xs);
+      color: var(--pd-color-text-muted);
+    }
+
+    /* Row-based lists for fleeces, tests, stage events */
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--pd-space-2);
+    }
+    .list__item {
+      display: flex;
+      align-items: center;
+      gap: var(--pd-space-3);
+      padding: var(--pd-space-3) var(--pd-space-4);
+      background: var(--pd-color-bg-surface);
+      border: 1px solid var(--pd-color-border);
+      border-radius: var(--pd-radius-md);
+      font-size: var(--pd-text-sm);
+      line-height: var(--pd-leading-sm);
+    }
+    .meta-right { margin-left: auto; }
+
+    /* Action panels: complete, split, attach test, transition */
+    .action-panel {
+      padding: var(--pd-space-5) var(--pd-space-6);
+      background: var(--pd-color-bg-surface);
+      border: 1px solid var(--pd-color-border);
+      border-radius: var(--pd-radius-lg);
+    }
+    .action-panel + .action-panel { margin-top: 0; }
+    .action-panel__lead {
+      margin: 0 0 var(--pd-space-3);
+      font-size: var(--pd-text-sm);
+      line-height: var(--pd-leading-sm);
+    }
+
+    .form-row {
+      display: flex;
+      gap: var(--pd-space-3);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .form-row .grow { flex: 1; min-width: 200px; }
+    .form-row--tight { gap: var(--pd-space-2); }
+    .form-row--tight pd-input,
+    .form-row--tight pd-select { min-width: 140px; }
+    .form-row pd-input,
+    .form-row pd-select { display: block; }
+    .form-row .grow { flex: 1 1 200px; }
+
+    .split-rows {
+      display: flex;
+      flex-direction: column;
+      gap: var(--pd-space-2);
+    }
+    .split-actions {
+      display: flex;
+      gap: var(--pd-space-3);
+      margin-top: var(--pd-space-4);
+    }
+    .remove-x { font-size: 18px; line-height: 1; }
   `],
 })
 export class LotDetailComponent {
@@ -221,7 +294,7 @@ export class LotDetailComponent {
   private fiberTestsService = inject(FiberTestsService);
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly transitioning = signal(false);
@@ -246,6 +319,13 @@ export class LotDetailComponent {
     resultNumeric: number | null;
     resultUnit: string;
   } = { testType: 'MICRON_DIAMETER', instrument: '', resultNumeric: null, resultUnit: 'µm' };
+
+  readonly testTypeOptions: SelectOption[] = [
+    { value: 'MICRON_DIAMETER', label: 'Micron diameter' },
+    { value: 'COMFORT_FACTOR', label: 'Comfort factor' },
+    { value: 'STAPLE_LENGTH', label: 'Staple length' },
+    { value: 'IWTO_47_DISTRIBUTION', label: 'IWTO 47 distribution' },
+  ];
 
   readonly customerName = computed(() => this.customer()?.displayName ?? '—');
   readonly currentStageName = computed(() => {
@@ -277,6 +357,16 @@ export class LotDetailComponent {
       }
       return lot.pricingKindSnapshot;
     } catch { return lot.pricingKindSnapshot; }
+  });
+
+  /** Maps lot lifecycle to a chip tone — keeps the chip generic, this is the per-domain decision. */
+  readonly statusTone = computed<Tone>(() => {
+    switch (this.detail()?.lot.status) {
+      case 'COMPLETED': return 'success';
+      case 'CANCELLED': return 'danger';
+      case 'ACTIVE':    return 'info';
+      default:          return 'neutral';
+    }
   });
 
   constructor() { this.refresh(); }
@@ -324,13 +414,13 @@ export class LotDetailComponent {
       resultUnit: this.newTest.resultUnit.trim() || undefined,
     }).subscribe({
       next: () => {
-        this.snack.open('Test attached', 'OK', { duration: 1500 });
+        this.snack.show('Test attached', { durationMs: 1500 });
         this.newTest = { testType: 'MICRON_DIAMETER', instrument: '', resultNumeric: null, resultUnit: 'µm' };
         this.refresh();
         this.attachingTest.set(false);
       },
       error: (e) => {
-        this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown'));
         this.attachingTest.set(false);
       },
     });
@@ -350,13 +440,13 @@ export class LotDetailComponent {
       notes: this.notes || undefined,
     }).subscribe({
       next: () => {
-        this.snack.open('Moved to ' + this.nextStageName(), 'OK', { duration: 2000 });
+        this.snack.show('Moved to ' + this.nextStageName(), { durationMs: 2000 });
         this.notes = '';
         this.refresh();
         this.transitioning.set(false);
       },
       error: (e) => {
-        this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown'));
         this.transitioning.set(false);
       },
     });
@@ -370,12 +460,12 @@ export class LotDetailComponent {
     const weight = this.completeWeight && this.completeWeight > 0 ? this.completeWeight : undefined;
     this.ops.completeLot(tid, lot.id, weight).subscribe({
       next: () => {
-        this.snack.open('Lot completed — invoice generating', 'OK', { duration: 3000 });
+        this.snack.show('Lot completed — invoice generating', { durationMs: 3000 });
         this.refresh();
         this.completing.set(false);
       },
       error: (e) => {
-        this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown'));
         this.completing.set(false);
       },
     });
@@ -404,12 +494,12 @@ export class LotDetailComponent {
       notes: c.notes || undefined,
     }))).subscribe({
       next: (children) => {
-        this.snack.open(`Split into ${children.length} lots`, 'OK', { duration: 3000 });
+        this.snack.show(`Split into ${children.length} lots`, { durationMs: 3000 });
         this.refresh();
         this.splitting.set(false);
       },
       error: (e) => {
-        this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK');
+        this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown'));
         this.splitting.set(false);
       },
     });

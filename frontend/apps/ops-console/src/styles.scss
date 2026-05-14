@@ -3,30 +3,80 @@
 @include mat.elevation-classes();
 @include mat.app-background();
 
+/*
+ * Material theme — REQUIRED for Material 21 components to render. Without this,
+ * mat-card / mat-form-field / mat-button have no color/typography tokens and
+ * render invisible. azure-palette aligns with our slate-blue accent.
+ */
+html {
+  @include mat.theme((
+    color: mat.$azure-palette,
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+/*
+ * Pindraft design tokens — the :root { --pd-… } CSS custom properties that every
+ * component below uses. Imported here once so the tokens are in scope app-wide.
+ */
+@import '../../../libs/ui/src/lib/tokens.css';
+
+/*
+ * Ops-console brand: slate-blue. Industrial, operational, dense.
+ * Overrides the platform-default accent (which happens to also be slate-blue,
+ * but keeping the override explicit so the per-app brand identity is obvious).
+ */
+:root {
+  --pd-brand-accent:        var(--pd-blue-700);
+  --pd-brand-accent-hover:  var(--pd-blue-800);
+  --pd-brand-accent-bg:     var(--pd-blue-50);
+  --pd-brand-accent-strong: var(--pd-blue-800);
+  --pd-brand-text-on-accent: #ffffff;
+}
+
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Helvetica Neue', sans-serif;
-  background: #fafafa;
-  color: #1a1a1a;
+  font-family: var(--pd-font-sans);
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  background: var(--pd-color-bg-app);
+  color: var(--pd-color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * { box-sizing: border-box; }
 
+/*
+ * Page container — used by every screen as the outer wrapper. Token-driven so
+ * the gutter / max-width can be adjusted in one place.
+ */
 .page {
-  max-width: 1200px;
+  max-width: var(--pd-page-max-width);
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--pd-page-gutter-y) var(--pd-page-gutter-x);
 }
 
+/*
+ * LEGACY: page-title / page-subtitle classes. New screens should use
+ * <pd-page-header> from @pindraft/ui instead. These are retained while other
+ * screens migrate so nothing regresses; remove once every screen is on
+ * pd-page-header.
+ */
 .page-title {
-  font-size: 24px;
-  font-weight: 500;
-  margin: 0 0 4px;
+  font-size: var(--pd-text-2xl);
+  line-height: var(--pd-leading-2xl);
+  font-weight: var(--pd-weight-semibold);
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--pd-space-1);
+  color: var(--pd-color-text);
 }
 
 .page-subtitle {
-  font-size: 14px;
-  color: #666;
-  margin: 0 0 24px;
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  color: var(--pd-color-text-muted);
+  margin: 0 0 var(--pd-space-6);
 }

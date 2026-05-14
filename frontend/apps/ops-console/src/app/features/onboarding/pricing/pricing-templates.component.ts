@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { CreatePricingTemplateRequest, PricingKind, PricingTemplate } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, EmptyStateComponent, PageHeaderComponent, SnackbarService,
+} from '@pindraft/ui';
 import { OnboardingService } from '../services/onboarding.service';
 import { PricingFormComponent } from './pricing-form.component';
 
@@ -16,22 +16,23 @@ import { PricingFormComponent } from './pricing-form.component';
   selector: 'ops-pricing-templates',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatButtonModule, RouterLink, PricingFormComponent],
+  imports: [
+    RouterLink,
+    ButtonComponent, EmptyStateComponent, PageHeaderComponent,
+    PricingFormComponent,
+  ],
   template: `
     <div class="page">
       <a routerLink="/setup" class="back">← Back to setup</a>
-      <h1 class="page-title">Pricing templates</h1>
-      <p class="page-subtitle">
-        Templates your operators pick from when creating reservations. The template's
-        structure is snapshotted onto the lot at intake, so editing later doesn't
-        affect work already in flight.
-      </p>
+      <pd-page-header
+        title="Pricing templates"
+        subtitle="Templates your operators pick from when creating reservations. The template's structure is snapshotted onto the lot at intake, so editing later doesn't affect work already in flight." />
 
       @if (!loading()) {
         @if (templates().length === 0) {
-          <div class="empty">
-            No pricing templates yet. Add at least one — lots can't be invoiced without it.
-          </div>
+          <pd-empty-state
+            title="No pricing templates yet"
+            description="Add at least one — lots can't be invoiced without it." />
         } @else {
           <ul class="template-list">
             @for (t of templates(); track t.id) {
@@ -43,7 +44,7 @@ import { PricingFormComponent } from './pricing-form.component';
                     <span class="summary">{{ summarize(t) }}</span>
                   </div>
                 </div>
-                <button mat-button color="warn" (click)="remove(t)">Remove</button>
+                <pd-button variant="ghost" size="sm" (click)="remove(t)">Remove</pd-button>
               </li>
             }
           </ul>
@@ -55,28 +56,26 @@ import { PricingFormComponent } from './pricing-form.component';
             (save)="onSave($event)"
             (cancel)="showForm.set(false)" />
         } @else {
-          <button mat-flat-button color="primary" (click)="showForm.set(true)">
-            + Add template
-          </button>
+          <pd-button variant="primary" (click)="showForm.set(true)">+ Add template</pd-button>
         }
       }
     </div>
   `,
   styles: [`
-    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: #2563eb; text-decoration: none; }
-    .empty { padding: 24px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; margin-bottom: 16px; }
+    .page { padding: 24px 32px; }
+    .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
     .template-list { list-style: none; padding: 0; margin: 0 0 16px; }
-    .template-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; }
+    .template-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 1px solid var(--pd-color-border, #e5e7eb); border-radius: 8px; margin-bottom: 8px; }
     .meta { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
-    .kind { font-size: 11px; padding: 2px 8px; background: #f3f4f6; color: #666; border-radius: 4px; }
-    .summary { font-size: 12px; color: #666; }
-    .section { font-size: 14px; font-weight: 500; margin: 16px 0 8px; }
+    .kind { font-size: 11px; padding: 2px 8px; background: #f3f4f6; color: var(--pd-color-muted, #666); border-radius: 4px; }
+    .summary { font-size: 12px; color: var(--pd-color-muted, #666); }
+    .section { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: var(--pd-color-text, #111); }
   `],
 })
 export class PricingTemplatesComponent {
   private onboarding = inject(OnboardingService);
   private auth = inject(AuthService);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly templates = signal<PricingTemplate[]>([]);
@@ -126,9 +125,9 @@ export class PricingTemplatesComponent {
       next: (t) => {
         this.templates.update((list) => [...list, t]);
         this.showForm.set(false);
-        this.snack.open('Template added', 'OK', { duration: 2000 });
+        this.snack.show('Template added', { durationMs: 2000 });
       },
-      error: (e) => this.snack.open('Save failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      error: (e) => this.snack.show('Save failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 
@@ -138,7 +137,7 @@ export class PricingTemplatesComponent {
     if (!confirm(`Remove "${t.name}"?`)) return;
     this.onboarding.deactivatePricingTemplate(tid, t.id).subscribe({
       next: () => this.templates.update((list) => list.filter((x) => x.id !== t.id)),
-      error: (e) => this.snack.open('Remove failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      error: (e) => this.snack.show('Remove failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 }

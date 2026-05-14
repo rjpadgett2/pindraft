@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository users;
+    private final TenantRepository tenants;
     private final TenantMembershipRepository memberships;
     private final TenantCustomerRepository customers;
     private final RefreshTokenRepository refreshTokens;
@@ -29,6 +30,7 @@ public class AuthService {
 
     public AuthService(
         UserRepository users,
+        TenantRepository tenants,
         TenantMembershipRepository memberships,
         TenantCustomerRepository customers,
         RefreshTokenRepository refreshTokens,
@@ -37,6 +39,7 @@ public class AuthService {
         @Value("${pindraft.jwt.refresh-token-ttl-seconds}") long refreshTtlSeconds
     ) {
         this.users = users;
+        this.tenants = tenants;
         this.memberships = memberships;
         this.customers = customers;
         this.refreshTokens = refreshTokens;
@@ -56,21 +59,70 @@ public class AuthService {
 
     /**
      * Public registration — creates a fresh user with no tenant relationships and
-     * immediately issues tokens (auto-login). The new user can browse public
-     * surfaces, accept invitations, be added as a tenant_customer by a mill, or
-     * arrive via Hirsel manifest. Self-service mill creation is a separate flow
-     * not part of v1.
+     * immediately issues tokens (auto-login). Use this for the customer-portal
+     * sign-up flow. {@code userType} is optional and informational ({@code SHEPHERD}
+     * or {@code DESIGNER} typically); used to tailor the post-signup landing
+     * experience but does not grant access to anything.
      */
     @Transactional
-    public TokenPair register(String email, String password, String name) {
+    public TokenPair register(String email, String password, String name,
+                              @org.jspecify.annotations.Nullable String userType) {
         if (users.existsByEmailIgnoreCase(email)) {
             throw new EmailAlreadyExistsException(email);
         }
         var user = new UserEntity(
-            UUID.randomUUID(), email, passwordEncoder.encode(password), name, false);
+            UUID.randomUUID(), email, passwordEncoder.encode(password), name, false, userType);
         users.save(user);
         return issueTokens(user);
     }
+
+    /** Backwards-compatible overload used by the ops-console legacy path. */
+    @Transactional
+    public TokenPair register(String email, String password, String name) {
+        return register(email, password, name, null);
+    }
+
+    /**
+     * Self-service mill registration. Creates a user + tenant + MILL_ADMIN
+     * membership atomically. The new tenant starts in {@code SETUP} status so it
+     * doesn't appear in the public mill directory until the admin completes
+     * onboarding and clicks "Go live".
+     */
+    @Transactional
+    public RegisterMillResult registerMill(
+        String email, String password, String name, String millName
+    ) {
+        if (users.existsByEmailIgnoreCase(email)) {
+            throw new EmailAlreadyExistsException(email);
+        }
+        var user = new UserEntity(
+            UUID.randomUUID(), email, passwordEncoder.encode(password), name, false, "MILL_STAFF");
+        users.save(user);
+
+        var tenant = new TenantEntity(UUID.randomUUID(), millName, TenantKind.MILL);
+        // Tenant defaults to SETUP — see TenantStatus; SETUP keeps it out of the
+        // public directory and gates the operator screens until onboarding completes.
+        var savedTenant = tenants.save(tenant);
+
+        var membership = new TenantMembershipEntity(
+            UUID.randomUUID(), user.getId(), savedTenant.getId(), "MILL_ADMIN");
+        memberships.save(membership);
+
+        var tokens = issueTokens(user);
+        return new RegisterMillResult(user.getId(), savedTenant.getId(), tokens);
+    }
+
+    /**
+     * Shearer registration. Same as the generic register but pins
+     * {@code userType=SHEARER} so the shearer-pwa knows to route to its booking
+     * surfaces post-login.
+     */
+    @Transactional
+    public TokenPair registerShearer(String email, String password, String name) {
+        return register(email, password, name, "SHEARER");
+    }
+
+    public record RegisterMillResult(UUID userId, UUID tenantId, TokenPair tokens) {}
 
     @Transactional
     public TokenPair refresh(String refreshToken) {

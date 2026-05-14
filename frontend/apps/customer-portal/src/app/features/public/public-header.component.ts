@@ -1,35 +1,79 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 /**
- * Header for the public-facing surfaces. Same brand bar regardless of whether the
- * visitor is browsing the marketplace, viewing a trace, or looking through the mill
- * directory. Not authenticated — no operator name, no sign-out button.
+ * Header for the public-facing customer-portal surfaces — marketplace, mill
+ * directory, trace pages. Token-driven; uses the customer-portal brand
+ * (terracotta accent on cream) so the public surface reads as one piece with
+ * the /welcome landing.
  */
 @Component({
   selector: 'customer-public-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive],
   template: `
-    <header class="public-header">
-      <a class="brand" routerLink="/marketplace">Pindraft</a>
-      <nav>
-        <a routerLink="/marketplace">Marketplace</a>
-        <a routerLink="/mills">Mills</a>
+    <header class="ph">
+      <a class="ph__brand" routerLink="/welcome">Pindraft</a>
+      <nav class="ph__nav">
+        <a routerLink="/marketplace" routerLinkActive="ph__active">Marketplace</a>
+        <a routerLink="/mills" routerLinkActive="ph__active">Mills</a>
         <a routerLink="/login">Sign in</a>
-        <a class="sign-up" routerLink="/register">Sign up</a>
+        <a routerLink="/register" class="ph__signup">Sign up</a>
       </nav>
     </header>
   `,
   styles: [`
-    .public-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; background: white; }
-    .brand { font-weight: 500; font-size: 18px; color: #1a1a1a; text-decoration: none; }
-    nav { display: flex; gap: 24px; align-items: center; }
-    nav a { color: #666; text-decoration: none; font-size: 14px; }
-    nav a:hover { color: #1a1a1a; }
-    .sign-up { background: #2563eb; color: white !important; padding: 6px 12px; border-radius: 6px; }
-    .sign-up:hover { background: #1d4ed8; color: white !important; }
+    .ph {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--pd-space-4) var(--pd-space-8);
+      background: var(--pd-color-bg-app);
+      border-bottom: 1px solid var(--pd-cream-200);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .ph__brand {
+      font-family: var(--pd-font-sans);
+      font-size: var(--pd-text-md);
+      font-weight: var(--pd-weight-semibold);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--pd-brand-accent-strong);
+      text-decoration: none;
+    }
+    .ph__nav { display: flex; gap: var(--pd-space-5); align-items: center; }
+    .ph__nav a {
+      color: var(--pd-color-text-muted);
+      text-decoration: none;
+      font-size: var(--pd-text-sm);
+      font-weight: var(--pd-weight-medium);
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 120ms ease, border-color 120ms ease;
+    }
+    .ph__nav a:hover { color: var(--pd-color-text); }
+    .ph__nav a.ph__active {
+      color: var(--pd-brand-accent-strong);
+      border-bottom-color: var(--pd-brand-accent);
+    }
+    .ph__signup {
+      background: var(--pd-brand-accent);
+      color: var(--pd-brand-text-on-accent) !important;
+      padding: 6px var(--pd-space-3);
+      border-radius: var(--pd-radius-md);
+      border-bottom: none !important;
+    }
+    .ph__signup:hover { background: var(--pd-brand-accent-hover); }
+
+    @media (max-width: 720px) {
+      .ph { padding: var(--pd-space-3) var(--pd-space-4); }
+      .ph__nav { gap: var(--pd-space-3); }
+      .ph__nav a { font-size: var(--pd-text-xs); }
+    }
   `],
 })
 export class PublicHeaderComponent {}

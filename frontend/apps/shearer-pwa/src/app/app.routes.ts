@@ -3,9 +3,20 @@ import { authGuard } from '@pindraft/auth';
 
 export const appRoutes: Routes = [
   {
+    // Public marketing landing for shearer signup.
+    path: 'welcome',
+    loadComponent: () =>
+      import('./features/welcome/welcome.component').then((m) => m.WelcomeComponent),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: '',

@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { RouterLink } from '@angular/router';
-import { CustomerLot, CustomerLotsService } from './services/customer.service';
 import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  EmptyStateComponent, PageHeaderComponent, TableComponent,
+} from '@pindraft/ui';
+import { CustomerLot, CustomerLotsService } from './services/customer.service';
 
 /**
  * The shepherd's home. Lists every lot of theirs across every mill — the
@@ -16,59 +16,61 @@ import { DatePipe } from '@angular/common';
   selector: 'customer-my-lots',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatTableModule, DatePipe],
+  imports: [
+    RouterLink, DatePipe,
+    EmptyStateComponent, PageHeaderComponent, TableComponent,
+  ],
   template: `
     <div class="page">
-      <h1 class="page-title">My fiber</h1>
-      <p class="page-subtitle">Every lot you've shipped, across every mill you work with.</p>
+      <pd-page-header
+        title="My fiber"
+        subtitle="Every lot you've shipped, across every mill you work with." />
 
       @if (!loading()) {
         @if (lots().length === 0) {
-          <div class="empty">
-            <p>Nothing here yet. Once a mill receives your fiber, it'll show up here.</p>
-          </div>
+          <pd-empty-state
+            title="Nothing here yet"
+            description="Once a mill receives your fiber, it'll show up here." />
         } @else {
           @for (group of groupedByTenant(); track group.tenantId) {
             <h2 class="tenant-group">Mill {{ group.tenantId.substring(0, 8) }}</h2>
-            <table mat-table [dataSource]="group.lots">
-              <ng-container matColumnDef="lot">
-                <th mat-header-cell *matHeaderCellDef>Lot</th>
-                <td mat-cell *matCellDef="let lot">
-                  <a [routerLink]="['/lots', lot.id]">{{ lot.id.substring(0, 8) }}</a>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="weight">
-                <th mat-header-cell *matHeaderCellDef>Intake</th>
-                <td mat-cell *matCellDef="let lot">{{ lot.weightIntakeKg }} kg</td>
-              </ng-container>
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
-                <td mat-cell *matCellDef="let lot">
-                  <span class="status" [class]="lot.status">{{ lot.status }}</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="created">
-                <th mat-header-cell *matHeaderCellDef>Received</th>
-                <td mat-cell *matCellDef="let lot">{{ lot.createdAt | date:'mediumDate' }}</td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="cols"></tr>
-              <tr mat-row *matRowDef="let row; columns: cols"></tr>
-            </table>
+            <pd-table>
+              <thead>
+                <tr>
+                  <th>Lot</th>
+                  <th class="pd-table__num">Intake</th>
+                  <th>Status</th>
+                  <th>Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lot of group.lots; track lot.id) {
+                  <tr>
+                    <td>
+                      <a [routerLink]="['/lots', lot.id]">{{ lot.id.substring(0, 8) }}</a>
+                    </td>
+                    <td class="pd-table__num">{{ lot.weightIntakeKg }} kg</td>
+                    <td><span class="status" [class]="lot.status">{{ lot.status }}</span></td>
+                    <td>{{ lot.createdAt | date:'mediumDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </pd-table>
           }
         }
       } @else {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .empty { padding: 32px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; }
-    .tenant-group { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin: 24px 0 8px; font-weight: 500; }
-    table { width: 100%; background: white; margin-bottom: 16px; }
-    a { color: #2563eb; text-decoration: none; font-family: monospace; }
-    .status { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
-    .status.ACTIVE    { background: #dbeafe; color: #1e40af; }
-    .status.COMPLETED { background: #d1fae5; color: #065f46; }
+    .page { padding: 24px 32px; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
+    .tenant-group { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--pd-color-muted, #666); margin: 24px 0 8px; font-weight: 600; }
+    a { color: var(--pd-color-link, #2563eb); text-decoration: none; font-family: var(--pd-font-mono, ui-monospace, monospace); }
+    .status { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .status.ACTIVE    { background: var(--pd-color-info-bg, #dbeafe); color: var(--pd-color-info-text, #1e40af); }
+    .status.COMPLETED { background: var(--pd-color-success-bg, #d1fae5); color: var(--pd-color-success-text, #065f46); }
     .status.CANCELLED { background: #e5e7eb; color: #374151; }
   `],
 })
@@ -77,7 +79,6 @@ export class MyLotsComponent {
 
   readonly loading = signal(true);
   readonly lots = signal<CustomerLot[]>([]);
-  readonly cols = ['lot', 'weight', 'status', 'created'];
 
   /** Group lots by tenant for display. */
   readonly groupedByTenant = computed(() => {

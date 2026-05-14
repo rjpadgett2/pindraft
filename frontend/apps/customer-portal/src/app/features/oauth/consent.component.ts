@@ -1,10 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import { ButtonComponent, CardComponent } from '@pindraft/ui';
 
 /**
  * OAuth consent UI. The /authorize backend endpoint redirects here with the grant
@@ -19,51 +18,49 @@ import { AuthService } from '@pindraft/auth';
   selector: 'customer-oauth-consent',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatButtonModule, MatIconModule],
+  imports: [MatIconModule, ButtonComponent, CardComponent],
   template: `
     <div class="consent-page">
-      <mat-card class="consent-card">
-        <mat-card-content>
-          @if (!authenticated()) {
-            <p>Redirecting to sign in…</p>
-          } @else {
-            <header>
-              <mat-icon class="key-icon">key</mat-icon>
-              <h1>Authorize {{ clientName() }}</h1>
-            </header>
-            <p>
-              <strong>{{ clientName() }}</strong> wants to access your data at this mill on your behalf.
-            </p>
-            <p class="muted">
-              You'll be able to revoke this access at any time from your account settings.
-            </p>
+      <pd-card class="consent-card" padding="lg">
+        @if (!authenticated()) {
+          <p>Redirecting to sign in…</p>
+        } @else {
+          <header>
+            <mat-icon class="key-icon">key</mat-icon>
+            <h1>Authorize {{ clientName() }}</h1>
+          </header>
+          <p>
+            <strong>{{ clientName() }}</strong> wants to access your data at this mill on your behalf.
+          </p>
+          <p class="muted">
+            You'll be able to revoke this access at any time from your account settings.
+          </p>
 
-            <div class="scope-box">
-              <small>Scope</small>
-              <code>{{ scope() }}</code>
-            </div>
+          <div class="scope-box">
+            <small>Scope</small>
+            <code>{{ scope() }}</code>
+          </div>
 
-            <div class="actions">
-              <button mat-button (click)="deny()">Deny</button>
-              <button mat-flat-button color="primary" [disabled]="working()" (click)="approve()">
-                {{ working() ? 'Authorizing…' : 'Authorize' }}
-              </button>
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
+          <div class="actions">
+            <pd-button variant="ghost" (click)="deny()">Deny</pd-button>
+            <pd-button variant="primary" [disabled]="working()" (click)="approve()">
+              {{ working() ? 'Authorizing…' : 'Authorize' }}
+            </pd-button>
+          </div>
+        }
+      </pd-card>
     </div>
   `,
   styles: [`
-    .consent-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; background: #f9fafb; }
+    .consent-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; background: var(--pd-color-bg-app, #f9fafb); }
     .consent-card { max-width: 480px; width: 100%; }
     header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    h1 { font-size: 20px; font-weight: 500; margin: 0; }
-    .key-icon { color: #2563eb; font-size: 28px; height: 28px; width: 28px; }
-    .muted { color: #666; font-size: 13px; margin: 8px 0; }
+    h1 { font-size: 20px; font-weight: 600; margin: 0; }
+    .key-icon { color: var(--pd-brand-accent, #2563eb); font-size: 28px; height: 28px; width: 28px; }
+    .muted { color: var(--pd-color-muted, #666); font-size: 13px; margin: 8px 0; }
     .scope-box { background: #f3f4f6; padding: 12px; border-radius: 6px; margin: 16px 0; }
-    .scope-box small { display: block; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .scope-box code { font-size: 13px; color: #1a1a1a; }
+    .scope-box small { display: block; color: var(--pd-color-muted, #666); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .scope-box code { font-size: 13px; color: var(--pd-color-text, #1a1a1a); font-family: var(--pd-font-mono, ui-monospace, monospace); }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   `],
 })

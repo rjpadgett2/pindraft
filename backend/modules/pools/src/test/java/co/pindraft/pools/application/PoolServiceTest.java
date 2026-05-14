@@ -105,4 +105,40 @@ class PoolServiceTest {
         assertThatThrownBy(() -> service.distribute(tenantId, poolId, new BigDecimal("1000")))
             .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void distribute_writes_settlement_with_per_contributor_distributions() {
+        // The spec calls for the settlement record + per-contributor breakdown to
+        // be persisted in the same transaction as the pool state change.
+        var c1 = new PoolContributionEntity(UUID.randomUUID(), poolId, UUID.randomUUID(), "Alpha", new BigDecimal("8"), null);
+        var c2 = new PoolContributionEntity(UUID.randomUUID(), poolId, UUID.randomUUID(), "Bravo", new BigDecimal("12"), null);
+        pool.close();
+        when(pools.findById(poolId)).thenReturn(Optional.of(pool));
+        when(contributions.findByPoolIdOrderByAcceptedAt(poolId)).thenReturn(List.of(c1, c2));
+
+        service.distribute(tenantId, poolId, new BigDecimal("1000"));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(
+            co.pindraft.pools.domain.SettlementEntity.class);
+        org.mockito.Mockito.verify(settlements).save(captor.capture());
+        var settlement = captor.getValue();
+
+        // $1000.00 = 100000 cents
+        assertThat(settlement.getTotalRevenueCents()).isEqualTo(100_000L);
+        assertThat(settlement.getPoolId()).isEqualTo(poolId);
+        assertThat(settlement.getTenantId()).isEqualTo(tenantId);
+        assertThat(settlement.getDistributions()).hasSize(2);
+
+        // 8/20 = 40% → $400.00 = 40000 cents
+        var d0 = settlement.getDistributions().get(0);
+        assertThat(d0.getSharePercent()).isEqualByComparingTo("40.0000");
+        assertThat(d0.getAmountCents()).isEqualTo(40_000L);
+        assertThat(d0.getCustomerDisplayName()).isEqualTo("Alpha");
+
+        // 12/20 = 60% → $600.00 = 60000 cents
+        var d1 = settlement.getDistributions().get(1);
+        assertThat(d1.getSharePercent()).isEqualByComparingTo("60.0000");
+        assertThat(d1.getAmountCents()).isEqualTo(60_000L);
+        assertThat(d1.getCustomerDisplayName()).isEqualTo("Bravo");
+    }
 }

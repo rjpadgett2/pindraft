@@ -1,17 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
+import {
+  ButtonComponent, EmptyStateComponent, PageHeaderComponent,
+  SnackbarService, TableComponent,
+} from '@pindraft/ui';
 import { Listing, ListingsService } from './services/listings.service';
 
 /**
  * Mill-side listings dashboard. Shows everything (draft, published, sold, archived)
- * with state chips and per-row action menu (publish / mark sold / archive).
+ * with state chips and per-row inline actions (publish / mark sold / archive).
  *
  * State transitions go through the backend, which enforces the lifecycle rules —
  * we just present the affordances.
@@ -21,103 +20,85 @@ import { Listing, ListingsService } from './services/listings.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
-    MatTableModule, MatButtonModule, MatChipsModule, MatIconModule, MatMenuModule,
+    RouterLink, MatIconModule,
+    ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
   ],
   template: `
     <div class="page">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">Marketplace listings</h1>
-          <p class="page-subtitle">Finished products and fiber available for sale.</p>
-        </div>
-        <button mat-flat-button color="primary" routerLink="/marketplace/listings/new">
-          + New listing
-        </button>
-      </header>
+      <pd-page-header
+        title="Marketplace listings"
+        subtitle="Finished products and fiber available for sale.">
+        <pd-button variant="primary" routerLink="/marketplace/listings/new">+ New listing</pd-button>
+      </pd-page-header>
 
       @if (!loading()) {
         @if (listings().length === 0) {
-          <div class="empty">
-            No listings yet. Create one to start showing finished products on the public marketplace.
-          </div>
+          <pd-empty-state
+            title="No listings yet"
+            description="Create one to start showing finished products on the public marketplace." />
         } @else {
-          <table mat-table [dataSource]="listings()">
-            <ng-container matColumnDef="title">
-              <th mat-header-cell *matHeaderCellDef>Title</th>
-              <td mat-cell *matCellDef="let l">
-                <strong>{{ l.title }}</strong>
-                @if (l.traceSlug) { <mat-icon class="trace-icon" title="Has provenance">verified</mat-icon> }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="kind">
-              <th mat-header-cell *matHeaderCellDef>Kind</th>
-              <td mat-cell *matCellDef="let l">{{ l.kind }}</td>
-            </ng-container>
-            <ng-container matColumnDef="price">
-              <th mat-header-cell *matHeaderCellDef>Price</th>
-              <td mat-cell *matCellDef="let l">\${{ l.pricePerKg }}/kg × {{ l.quantityKg }} kg</td>
-            </ng-container>
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let l">
-                <span class="status" [class]="l.status">{{ l.status }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let l">
-                <button mat-icon-button [matMenuTriggerFor]="menu">
-                  <mat-icon>more_vert</mat-icon>
-                </button>
-                <mat-menu #menu="matMenu">
-                  @if (l.status === 'DRAFT') {
-                    <button mat-menu-item (click)="publish(l.id)">
-                      <mat-icon>publish</mat-icon> Publish
-                    </button>
-                  }
-                  @if (l.status === 'PUBLISHED') {
-                    <button mat-menu-item (click)="markSold(l.id)">
-                      <mat-icon>sell</mat-icon> Mark sold
-                    </button>
-                  }
-                  @if (l.status !== 'SOLD') {
-                    <button mat-menu-item (click)="archive(l.id)">
-                      <mat-icon>archive</mat-icon> Archive
-                    </button>
-                  }
-                </mat-menu>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="cols"></tr>
-            <tr mat-row *matRowDef="let row; columns: cols"></tr>
-          </table>
+          <pd-table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Kind</th>
+                <th class="pd-table__num">Price</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of listings(); track l.id) {
+                <tr>
+                  <td>
+                    <strong>{{ l.title }}</strong>
+                    @if (l.traceSlug) {
+                      <mat-icon class="trace-icon" title="Has provenance">verified</mat-icon>
+                    }
+                  </td>
+                  <td>{{ l.kind }}</td>
+                  <td class="pd-table__num">\${{ l.pricePerKg }}/kg × {{ l.quantityKg }} kg</td>
+                  <td><span class="status" [class]="l.status">{{ l.status }}</span></td>
+                  <td class="row-actions">
+                    @if (l.status === 'DRAFT') {
+                      <pd-button variant="ghost" size="sm" (click)="publish(l.id)">Publish</pd-button>
+                    }
+                    @if (l.status === 'PUBLISHED') {
+                      <pd-button variant="ghost" size="sm" (click)="markSold(l.id)">Mark sold</pd-button>
+                    }
+                    @if (l.status !== 'SOLD' && l.status !== 'ARCHIVED') {
+                      <pd-button variant="ghost" size="sm" (click)="archive(l.id)">Archive</pd-button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </pd-table>
         }
       } @else {
-        <p>Loading…</p>
+        <p class="muted">Loading…</p>
       }
     </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .empty { padding: 32px; background: #f9fafb; border-radius: 8px; text-align: center; color: #666; }
-    table { width: 100%; background: white; }
-    .trace-icon { color: #10b981; font-size: 16px; height: 16px; width: 16px; vertical-align: middle; margin-left: 4px; }
-    .status { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+    .page { padding: 24px 32px; }
+    .muted { color: var(--pd-color-muted, #6b7280); font-size: 13px; }
+    .trace-icon { color: var(--pd-color-success, #10b981); font-size: 16px; height: 16px; width: 16px; vertical-align: middle; margin-left: 4px; }
+    .status { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
     .status.DRAFT     { background: #f3f4f6; color: #374151; }
-    .status.PUBLISHED { background: #d1fae5; color: #065f46; }
-    .status.SOLD      { background: #fef3c7; color: #92400e; }
-    .status.ARCHIVED  { background: #e5e7eb; color: #6b7280; }
+    .status.PUBLISHED { background: var(--pd-color-success-bg, #d1fae5); color: var(--pd-color-success-text, #065f46); }
+    .status.SOLD      { background: var(--pd-color-warning-bg, #fef3c7); color: var(--pd-color-warning-text, #92400e); }
+    .status.ARCHIVED  { background: #e5e7eb; color: var(--pd-color-muted, #6b7280); }
+    .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
   `],
 })
 export class ListingsComponent {
   private service = inject(ListingsService);
   private auth = inject(AuthService);
-  private snack = inject(MatSnackBar);
+  private snack = inject(SnackbarService);
 
   readonly loading = signal(true);
   readonly listings = signal<Listing[]>([]);
-  readonly cols = ['title', 'kind', 'price', 'status', 'actions'];
 
   constructor() { this.refresh(); }
 
@@ -135,8 +116,8 @@ export class ListingsComponent {
     const tid = this.auth.activeTenantId();
     if (!tid) return;
     this.service.publish(tid, id).subscribe({
-      next: () => { this.snack.open('Published', 'OK', { duration: 1500 }); this.refresh(); },
-      error: (e) => this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      next: () => { this.snack.show('Published', { durationMs: 1500 }); this.refresh(); },
+      error: (e) => this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 
@@ -144,8 +125,8 @@ export class ListingsComponent {
     const tid = this.auth.activeTenantId();
     if (!tid) return;
     this.service.markSold(tid, id).subscribe({
-      next: () => { this.snack.open('Marked sold', 'OK', { duration: 1500 }); this.refresh(); },
-      error: (e) => this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      next: () => { this.snack.show('Marked sold', { durationMs: 1500 }); this.refresh(); },
+      error: (e) => this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 
@@ -153,8 +134,8 @@ export class ListingsComponent {
     const tid = this.auth.activeTenantId();
     if (!tid) return;
     this.service.archive(tid, id).subscribe({
-      next: () => { this.snack.open('Archived', 'OK', { duration: 1500 }); this.refresh(); },
-      error: (e) => this.snack.open('Failed: ' + (e?.error?.detail ?? 'unknown'), 'OK'),
+      next: () => { this.snack.show('Archived', { durationMs: 1500 }); this.refresh(); },
+      error: (e) => this.snack.show('Failed: ' + (e?.error?.detail ?? 'unknown')),
     });
   }
 }
