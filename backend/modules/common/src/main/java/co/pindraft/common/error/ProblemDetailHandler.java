@@ -1,6 +1,8 @@
 package co.pindraft.common.error;
 
 import java.net.URI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class ProblemDetailHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ProblemDetailHandler.class);
 
     @ExceptionHandler(PindraftException.class)
     public ProblemDetail handlePindraftException(PindraftException e) {
@@ -44,6 +48,9 @@ public class ProblemDetailHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception e) {
+        // Log the full stack trace — the response is intentionally generic for callers,
+        // but a silent 500 with no server-side breadcrumb is debugging hostile.
+        log.error("Unhandled exception bubbled to ProblemDetailHandler", e);
         var problem = ProblemDetail.forStatusAndDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "An unexpected error occurred"

@@ -1,0 +1,1 @@
+- [Frontend design pass deferred](design-pass-deferred.md) — styling/design system is a deliberate follow-up; ship features first

@@ -54,6 +54,24 @@ public class AuthService {
         return issueTokens(user);
     }
 
+    /**
+     * Public registration — creates a fresh user with no tenant relationships and
+     * immediately issues tokens (auto-login). The new user can browse public
+     * surfaces, accept invitations, be added as a tenant_customer by a mill, or
+     * arrive via Hirsel manifest. Self-service mill creation is a separate flow
+     * not part of v1.
+     */
+    @Transactional
+    public TokenPair register(String email, String password, String name) {
+        if (users.existsByEmailIgnoreCase(email)) {
+            throw new EmailAlreadyExistsException(email);
+        }
+        var user = new UserEntity(
+            UUID.randomUUID(), email, passwordEncoder.encode(password), name, false);
+        users.save(user);
+        return issueTokens(user);
+    }
+
     @Transactional
     public TokenPair refresh(String refreshToken) {
         var hash = hashToken(refreshToken);

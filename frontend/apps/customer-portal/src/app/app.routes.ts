@@ -36,6 +36,12 @@ export const appRoutes: Routes = [
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
+  {
+    // Public registration — shepherds and designers sign up here.
+    path: 'register',
+    loadComponent: () =>
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
+  },
 
   // OAuth consent — authGuard so unauthenticated users get redirected to login first
   {

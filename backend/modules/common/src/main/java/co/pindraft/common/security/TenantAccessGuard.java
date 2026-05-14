@@ -46,7 +46,12 @@ public class TenantAccessGuard {
     }
 
     public void requireRole(UUID tenantId, String role) {
-        var actual = contextHolder.get().staffRoleAt(tenantId);
+        var ctx = contextHolder.get();
+        // Platform admins bypass tenant role checks — matches the spec's "platform admin
+        // bypasses tenant scoping" and the hasStaffAccessTo behavior, where platform
+        // admin always grants access.
+        if (ctx.isPlatformAdmin()) return;
+        var actual = ctx.staffRoleAt(tenantId);
         if (actual.isEmpty() || !actual.get().equals(role)) {
             throw new TenantAccessDeniedException(tenantId, "role:" + role);
         }

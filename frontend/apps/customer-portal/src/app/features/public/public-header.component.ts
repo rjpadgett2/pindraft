@@ -17,7 +17,8 @@ import { RouterLink } from '@angular/router';
       <nav>
         <a routerLink="/marketplace">Marketplace</a>
         <a routerLink="/mills">Mills</a>
-        <a class="sign-in" routerLink="/login">Sign in</a>
+        <a routerLink="/login">Sign in</a>
+        <a class="sign-up" routerLink="/register">Sign up</a>
       </nav>
     </header>
   `,
@@ -27,7 +28,8 @@ import { RouterLink } from '@angular/router';
     nav { display: flex; gap: 24px; align-items: center; }
     nav a { color: #666; text-decoration: none; font-size: 14px; }
     nav a:hover { color: #1a1a1a; }
-    .sign-in { color: #2563eb; }
+    .sign-up { background: #2563eb; color: white !important; padding: 6px 12px; border-radius: 6px; }
+    .sign-up:hover { background: #1d4ed8; color: white !important; }
   `],
 })
 export class PublicHeaderComponent {}

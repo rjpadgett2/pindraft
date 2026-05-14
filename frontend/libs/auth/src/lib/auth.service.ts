@@ -54,6 +54,17 @@ export class AuthService {
       .pipe(tap((tokens) => this.handleTokenResponse(tokens)));
   }
 
+  /**
+   * Public registration — creates a user with no tenant relationships and
+   * auto-issues tokens. Used by the customer-portal sign-up page. New mill setup
+   * is a separate flow.
+   */
+  register(email: string, password: string, name: string): Observable<TokenResponse> {
+    return this.http
+      .post<TokenResponse>(`${this.apiBase}/auth/register`, { email, password, name })
+      .pipe(tap((tokens) => this.handleTokenResponse(tokens)));
+  }
+
   refreshAccessToken(): Observable<TokenResponse> {
     const refresh = this.storage.getRefreshToken();
     return this.http

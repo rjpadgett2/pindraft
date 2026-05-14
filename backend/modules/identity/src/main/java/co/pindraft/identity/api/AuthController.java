@@ -26,6 +26,13 @@ public class AuthController {
         return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
+    @PostMapping("/register")
+    @Operation(summary = "Public registration. Creates a user with no tenant relationships and auto-logs them in. Shepherds and designers use this; new mill setup is separate.")
+    public TokenResponse register(@Valid @RequestBody RegisterRequest req) {
+        var tokens = authService.register(req.email(), req.password(), req.name());
+        return new TokenResponse(tokens.accessToken(), tokens.refreshToken());
+    }
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token using a refresh token")
     public TokenResponse refresh(@Valid @RequestBody RefreshRequest req) {
@@ -40,6 +47,10 @@ public class AuthController {
     }
 
     public record LoginRequest(@Email @NotBlank String email, @NotBlank String password) {}
+    public record RegisterRequest(
+        @Email @NotBlank String email,
+        @NotBlank String password,
+        @NotBlank String name) {}
     public record RefreshRequest(@NotBlank String refreshToken) {}
     public record TokenResponse(String accessToken, String refreshToken) {}
 }
