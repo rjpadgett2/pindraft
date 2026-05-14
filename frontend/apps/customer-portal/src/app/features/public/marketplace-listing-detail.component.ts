@@ -1,8 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ButtonComponent, CardComponent } from '@pindraft/ui';
+import { ButtonComponent, CardComponent, IconComponent } from '@pindraft/ui';
 import { PublicListing, PublicMarketplaceService } from './services/public-marketplace.service';
 import { PublicHeaderComponent } from './public-header.component';
 
@@ -15,9 +14,8 @@ import { PublicHeaderComponent } from './public-header.component';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DatePipe, RouterLink, MatIconModule,
-    ButtonComponent, CardComponent,
-    PublicHeaderComponent,
+    DatePipe, RouterLink, ButtonComponent, CardComponent,
+    PublicHeaderComponent, IconComponent
   ],
   template: `
     <customer-public-header />
@@ -58,7 +56,7 @@ import { PublicHeaderComponent } from './public-header.component';
           @if (l.traceSlug) {
             <pd-card class="trace-card">
               <div class="trace-header">
-                <mat-icon class="verified">verified</mat-icon>
+                <pd-icon name="verified"  class="verified" />
                 <strong>Provenance available</strong>
               </div>
               <p>Trace this batch from the animal that grew the fiber through every stage of the mill.</p>

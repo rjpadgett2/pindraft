@@ -11,12 +11,10 @@
   },
   "dependencies": {
     "@angular/animations": "^21.2.0",
-    "@angular/cdk": "^21.2.0",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.0",
-    "@angular/material": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/platform-browser-dynamic": "^21.2.0",
     "@angular/router": "^21.2.0",
@@ -33,6 +31,7 @@
     "@nx/js": "^21.0.0",
     "@nx/vite": "^21.0.0",
     "@nx/workspace": "^21.0.0",
+    "@openapitools/openapi-generator-cli": "^2.13.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
@@ -40,7 +39,6 @@
     "eslint-plugin-import": "^2.31.0",
     "nx": "^21.0.0",
     "typescript": "~5.9.0",
-    "vitest": "^2.0.0",
-    "@openapitools/openapi-generator-cli": "^2.13.0"
+    "vitest": "^2.0.0"
   }
 }

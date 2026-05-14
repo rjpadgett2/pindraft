@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
-import {
-  ButtonComponent, EmptyStateComponent, PageHeaderComponent,
-  SnackbarService, TableComponent,
-} from '@pindraft/ui';
+import { ButtonComponent, EmptyStateComponent, IconComponent, PageHeaderComponent, SnackbarService, TableComponent } from '@pindraft/ui';
 import { Listing, ListingsService } from './services/listings.service';
 
 /**
@@ -20,8 +16,7 @@ import { Listing, ListingsService } from './services/listings.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink, MatIconModule,
-    ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
+    RouterLink, ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent, IconComponent
   ],
   template: `
     <div class="page">
@@ -53,7 +48,7 @@ import { Listing, ListingsService } from './services/listings.service';
                   <td>
                     <strong>{{ l.title }}</strong>
                     @if (l.traceSlug) {
-                      <mat-icon class="trace-icon" title="Has provenance">verified</mat-icon>
+                      <pd-icon name="verified"  class="trace-icon" title="Has provenance" />
                     }
                   </td>
                   <td>{{ l.kind }}</td>

@@ -1,22 +1,7 @@
-@use '@angular/material' as mat;
-
-@include mat.elevation-classes();
-@include mat.app-background();
-
 /*
- * Material theme — REQUIRED for Material 21 components to render. Without this,
- * mat-card / mat-form-field / mat-button have no color/typography tokens and
- * render invisible.
+ * Pindraft design tokens. No Angular Material; every UI primitive comes from
+ * @pindraft/ui and uses these tokens directly.
  */
-html {
-  @include mat.theme((
-    color: mat.$azure-palette,
-    typography: Roboto,
-    density: 0,
-  ));
-}
-
-/* Pindraft design tokens. */
 @import '../../../libs/ui/src/lib/tokens.css';
 
 /*

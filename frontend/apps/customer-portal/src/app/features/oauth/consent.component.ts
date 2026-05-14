@@ -1,9 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@pindraft/auth';
-import { ButtonComponent, CardComponent } from '@pindraft/ui';
+import { ButtonComponent, CardComponent, IconComponent } from '@pindraft/ui';
 
 /**
  * OAuth consent UI. The /authorize backend endpoint redirects here with the grant
@@ -18,7 +17,7 @@ import { ButtonComponent, CardComponent } from '@pindraft/ui';
   selector: 'customer-oauth-consent',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconModule, ButtonComponent, CardComponent],
+  imports: [ButtonComponent, CardComponent, IconComponent],
   template: `
     <div class="consent-page">
       <pd-card class="consent-card" padding="lg">
@@ -26,7 +25,7 @@ import { ButtonComponent, CardComponent } from '@pindraft/ui';
           <p>Redirecting to sign in…</p>
         } @else {
           <header>
-            <mat-icon class="key-icon">key</mat-icon>
+            <pd-icon name="key"  class="key-icon" />
             <h1>Authorize {{ clientName() }}</h1>
           </header>
           <p>

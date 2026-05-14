@@ -1,13 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { ProcessingStageType, WorkflowStage } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
-import {
-  ButtonComponent, CardComponent, InputComponent, PageHeaderComponent,
-  SelectComponent, SelectOption, SnackbarService,
-} from '@pindraft/ui';
+import { ButtonComponent, CardComponent, IconComponent, InputComponent, PageHeaderComponent, SelectComponent, SelectOption, SnackbarService } from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from './services/onboarding.service';
 
@@ -23,8 +19,7 @@ import { OnboardingService } from './services/onboarding.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink, MatIconModule,
-    ButtonComponent, CardComponent, InputComponent, PageHeaderComponent, SelectComponent,
+    FormsModule, RouterLink, ButtonComponent, CardComponent, InputComponent, PageHeaderComponent, SelectComponent, IconComponent
   ],
   template: `
     <div class="page">
@@ -58,7 +53,7 @@ import { OnboardingService } from './services/onboarding.service';
               <tr>
                 <td class="handle">
                   <button class="icon-btn" [disabled]="i === 0" (click)="moveUp(i)" aria-label="Move up">
-                    <mat-icon>arrow_upward</mat-icon>
+                    <pd-icon name="arrow_upward" />
                   </button>
                 </td>
                 <td>{{ stage.orderIndex }}</td>

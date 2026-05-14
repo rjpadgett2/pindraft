@@ -1,15 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 import { Customer, Equipment, LotDetailFull, WorkflowStage } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
-import {
-  ButtonComponent, CardComponent, InputComponent,
-  KeyValueGridComponent, KvComponent, PageHeaderComponent,
-  SelectComponent, SelectOption, SnackbarService,
-} from '@pindraft/ui';
+import { ButtonComponent, CardComponent, IconComponent, InputComponent, KeyValueGridComponent, KvComponent, PageHeaderComponent, SelectComponent, SelectOption, SnackbarService } from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from '../onboarding/services/onboarding.service';
 import { OperationsService } from './services/operations.service';
@@ -31,9 +26,8 @@ import { OperationsService } from './services/operations.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink, DatePipe, MatIconModule,
-    ButtonComponent, CardComponent, InputComponent,
-    KeyValueGridComponent, KvComponent, PageHeaderComponent, SelectComponent,
+    FormsModule, RouterLink, DatePipe, ButtonComponent, CardComponent, InputComponent,
+    KeyValueGridComponent, KvComponent, PageHeaderComponent, SelectComponent, IconComponent
   ],
   template: `
     <div class="page">
@@ -106,7 +100,7 @@ import { OperationsService } from './services/operations.service';
         <ul class="recent">
           @for (a of recentActions(); track a.id) {
             <li>
-              <mat-icon>check_circle</mat-icon>
+              <pd-icon name="check_circle" />
               <span>{{ a.label }}</span>
               <small>{{ a.at | date:'shortTime' }}</small>
             </li>

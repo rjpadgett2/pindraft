@@ -1,8 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CardComponent, EmptyStateComponent } from '@pindraft/ui';
+import { CardComponent, EmptyStateComponent, IconComponent } from '@pindraft/ui';
 import { PublicTraceResponse, PublicTraceService } from './services/public-trace.service';
 
 /**
@@ -18,7 +17,7 @@ import { PublicTraceResponse, PublicTraceService } from './services/public-trace
   selector: 'customer-public-trace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, MatIconModule, CardComponent, EmptyStateComponent],
+  imports: [DatePipe, RouterLink, CardComponent, EmptyStateComponent, IconComponent],
   template: `
     <div class="tr">
       <header class="tr__header">
@@ -45,7 +44,7 @@ import { PublicTraceResponse, PublicTraceService } from './services/public-trace
                 <li class="tr__step" [class.tr__step--current]="!segment.exitedAt">
                   <div class="tr__step-dot" aria-hidden="true">
                     @if (segment.exitedAt) {
-                      <mat-icon class="tr__step-icon">check</mat-icon>
+                      <pd-icon name="check"  class="tr__step-icon" />
                     } @else {
                       <span class="tr__step-pulse"></span>
                     }

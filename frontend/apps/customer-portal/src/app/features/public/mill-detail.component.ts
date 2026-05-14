@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { MillDetail, PublicListing, PublicMarketplaceService } from './services/public-marketplace.service';
 import { PublicHeaderComponent } from './public-header.component';
+import { IconComponent } from '@pindraft/ui';
 
 /**
  * Public mill profile page. Lists the mill's published listings inline.
@@ -12,7 +12,7 @@ import { PublicHeaderComponent } from './public-header.component';
   selector: 'customer-mill-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, PublicHeaderComponent],
+  imports: [RouterLink, PublicHeaderComponent, IconComponent],
   template: `
     <customer-public-header />
     <div class="public-page">
@@ -31,7 +31,7 @@ import { PublicHeaderComponent } from './public-header.component';
               <a class="card" [routerLink]="['/marketplace', l.id]">
                 <div class="card-header">
                   <span class="kind-badge">{{ l.kind }}</span>
-                  @if (l.traceSlug) { <mat-icon class="trace-icon" title="Provenance available">verified</mat-icon> }
+                  @if (l.traceSlug) { <pd-icon name="verified"  class="trace-icon" title="Provenance available" /> }
                 </div>
                 <h3>{{ l.title }}</h3>
                 <p class="price">\${{ l.pricePerKg }}/kg • {{ l.quantityKg }} kg</p>

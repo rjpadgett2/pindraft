@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { ButtonComponent, CardComponent, EmptyStateComponent } from '@pindraft/ui';
+import { ButtonComponent, CardComponent, EmptyStateComponent, IconComponent } from '@pindraft/ui';
 import { ListingKind, PublicListing, PublicMarketplaceService } from './services/public-marketplace.service';
 import { PublicHeaderComponent } from './public-header.component';
 
@@ -15,7 +14,7 @@ import { PublicHeaderComponent } from './public-header.component';
   selector: 'customer-public-marketplace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, PublicHeaderComponent, ButtonComponent, CardComponent, EmptyStateComponent],
+  imports: [RouterLink, PublicHeaderComponent, ButtonComponent, CardComponent, EmptyStateComponent, IconComponent],
   template: `
     <customer-public-header />
 
@@ -52,7 +51,7 @@ import { PublicHeaderComponent } from './public-header.component';
                     <span class="mp-card__kind">{{ l.kind }}</span>
                     @if (l.traceSlug) {
                       <span class="mp-card__trace" title="Provenance available">
-                        <mat-icon>verified</mat-icon> Traced
+                        <pd-icon name="verified" /> Traced
                       </span>
                     }
                   </div>
