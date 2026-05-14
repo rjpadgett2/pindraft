@@ -137,7 +137,7 @@ import { OperationsService } from './services/operations.service';
     .section { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--pd-color-text, #111); }
     .recent { list-style: none; padding: 0; margin: 0; }
     .recent li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
-    .recent mat-icon { color: var(--pd-color-success, #10b981); font-size: 18px; height: 18px; width: 18px; }
+    .recent pd-icon { color: var(--pd-color-success, #10b981); }
     .recent small { margin-left: auto; color: var(--pd-color-muted, #9ca3af); }
   `],
 })

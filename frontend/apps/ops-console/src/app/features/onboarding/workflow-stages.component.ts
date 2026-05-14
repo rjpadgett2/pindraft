@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ProcessingStageType, WorkflowStage } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
-import { ButtonComponent, CardComponent, IconComponent, InputComponent, PageHeaderComponent, SelectComponent, SelectOption, SnackbarService } from '@pindraft/ui';
+import { ButtonComponent, CardComponent, IconButtonComponent, IconComponent, InputComponent, PageHeaderComponent, SelectComponent, SelectOption, SnackbarService } from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OnboardingService } from './services/onboarding.service';
 
@@ -19,7 +19,7 @@ import { OnboardingService } from './services/onboarding.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink, ButtonComponent, CardComponent, InputComponent, PageHeaderComponent, SelectComponent, IconComponent
+    FormsModule, RouterLink, ButtonComponent, CardComponent, IconButtonComponent, IconComponent, InputComponent, PageHeaderComponent, SelectComponent
   ],
   template: `
     <div class="page">
@@ -52,9 +52,10 @@ import { OnboardingService } from './services/onboarding.service';
             @for (stage of stages(); track stage.id; let i = $index) {
               <tr>
                 <td class="handle">
-                  <button class="icon-btn" [disabled]="i === 0" (click)="moveUp(i)" aria-label="Move up">
-                    <pd-icon name="arrow_upward" />
-                  </button>
+                  <pd-icon-button size="sm" [disabled]="i === 0"
+                                  aria-label="Move up" (click)="moveUp(i)">
+                    <pd-icon name="arrow_upward" size="16" />
+                  </pd-icon-button>
                 </td>
                 <td>{{ stage.orderIndex }}</td>
                 <td><code class="type">{{ stage.stageType }}</code></td>
@@ -98,10 +99,6 @@ import { OnboardingService } from './services/onboarding.service';
     th, td { padding: 8px 12px; border-bottom: 1px solid var(--pd-color-border, #e5e7eb); text-align: left; font-size: 13px; }
     th { color: var(--pd-color-muted, #666); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; background: #f9fafb; }
     .handle { padding-left: 0; }
-    .icon-btn { background: none; border: 0; cursor: pointer; padding: 4px; border-radius: 4px; color: var(--pd-color-muted, #6b7280); }
-    .icon-btn:hover:not(:disabled) { background: #f3f4f6; }
-    .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .icon-btn mat-icon { font-size: 18px; height: 18px; width: 18px; }
     .type { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; font-family: var(--pd-font-mono, ui-monospace, monospace); }
     .name-input { width: 100%; padding: 6px 8px; border: 1px solid var(--pd-color-border, #e5e7eb); border-radius: 4px; font-size: 13px; }
     .name-input:focus { outline: none; border-color: var(--pd-brand-accent, #2563eb); }

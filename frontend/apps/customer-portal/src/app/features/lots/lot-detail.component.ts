@@ -1,9 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
-  PageHeaderComponent, SnackbarService,
+  PageHeaderComponent, SnackbarService, ToggleComponent,
 } from '@pindraft/ui';
 import {
   CustomerLotDetail,
@@ -22,9 +23,9 @@ import {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DatePipe, RouterLink,
+    DatePipe, FormsModule, RouterLink,
     ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
-    PageHeaderComponent,
+    PageHeaderComponent, ToggleComponent,
   ],
   template: `
     <div class="page">
@@ -58,12 +59,10 @@ import {
                 <strong>Public provenance page</strong>
                 <p>Make this lot's journey through the mill publicly viewable at a short URL.</p>
               </div>
-              <label class="toggle">
-                <input type="checkbox" [checked]="t.publicVisible"
-                       (change)="toggleVisibility(getChecked($event))" />
-                <span class="track"><span class="thumb"></span></span>
-                <span class="toggle-label">{{ t.publicVisible ? 'Public' : 'Private' }}</span>
-              </label>
+              <pd-toggle [ngModel]="t.publicVisible"
+                         (ngModelChange)="toggleVisibility($event)">
+                {{ t.publicVisible ? 'Public' : 'Private' }}
+              </pd-toggle>
             </div>
             @if (t.publicVisible) {
               <div class="trace-url">
@@ -138,13 +137,6 @@ import {
     .trace-row p { font-size: 12px; color: var(--pd-color-muted, #666); margin: 4px 0 0; }
     .trace-url { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; background: var(--pd-color-bg-sunken, #f9fafb); border-radius: 6px; }
     .trace-url code { flex: 1; font-size: 13px; color: var(--pd-color-text, #1a1a1a); font-family: var(--pd-font-mono, ui-monospace, monospace); }
-    .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; user-select: none; }
-    .toggle input { position: absolute; opacity: 0; pointer-events: none; }
-    .toggle .track { display: inline-block; width: 36px; height: 20px; background: #d1d5db; border-radius: 999px; position: relative; transition: background 0.15s; }
-    .toggle .thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
-    .toggle input:checked + .track { background: var(--pd-brand-accent, #c2410c); }
-    .toggle input:checked + .track .thumb { transform: translateX(16px); }
-    .toggle input:focus-visible + .track { outline: 2px solid var(--pd-brand-accent, #c2410c); outline-offset: 2px; }
     .section { font-size: 14px; font-weight: 600; margin: 24px 0 12px; color: var(--pd-color-text, #111); }
     .timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--pd-color-border, #e5e7eb); padding-left: 16px; }
     .timeline li { padding: 8px 0; }
@@ -208,10 +200,6 @@ export class CustomerLotDetailComponent {
     navigator.clipboard.writeText(this.traceUrl(slug)).then(() =>
       this.snack.show('URL copied', { durationMs: 1500 })
     );
-  }
-
-  getChecked(e: Event): boolean {
-    return (e.target as HTMLInputElement).checked;
   }
 
   toggleVisibility(checked: boolean): void {

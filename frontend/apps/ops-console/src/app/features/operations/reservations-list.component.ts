@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 import { Customer, Reservation } from '@pindraft/api-client';
 import { AuthService } from '@pindraft/auth';
 import {
-  ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
+  ButtonComponent, EmptyStateComponent, PageHeaderComponent,
+  StatusChipComponent, TableComponent,
 } from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { OperationsService } from './services/operations.service';
@@ -22,7 +23,8 @@ import { OperationsService } from './services/operations.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink, DatePipe,
-    ButtonComponent, EmptyStateComponent, PageHeaderComponent, TableComponent,
+    ButtonComponent, EmptyStateComponent, PageHeaderComponent,
+    StatusChipComponent, TableComponent,
   ],
   template: `
     <div class="page">
@@ -59,9 +61,9 @@ import { OperationsService } from './services/operations.service';
                   <td><span class="status" [class]="r.status">{{ r.status }}</span></td>
                   <td>
                     @if (r.externalSource === 'hirsel') {
-                      <span class="chip-hirsel">Hirsel</span>
+                      <pd-status-chip label="Hirsel" tone="info" />
                     } @else {
-                      <span class="chip-walkin">Manual</span>
+                      <pd-status-chip label="Manual" tone="neutral" />
                     }
                   </td>
                   <td>
@@ -90,8 +92,6 @@ import { OperationsService } from './services/operations.service';
     .status.PENDING   { background: var(--pd-color-warning-bg, #fef3c7); color: var(--pd-color-warning-text, #92400e); }
     .status.RECEIVED  { background: var(--pd-color-success-bg, #d1fae5); color: var(--pd-color-success-text, #065f46); }
     .status.CANCELLED { background: #e5e7eb; color: #374151; }
-    .chip-hirsel  { font-size: 11px; padding: 2px 8px; background: var(--pd-color-info-bg, #dbeafe); color: var(--pd-color-info-text, #1e40af); border-radius: 4px; }
-    .chip-walkin  { font-size: 11px; padding: 2px 8px; background: #f3f4f6; color: #666; border-radius: 4px; }
     .received-tag { font-size: 12px; color: var(--pd-color-muted, #6b7280); }
     .action-link { color: var(--pd-color-link, #2563eb); font-weight: 600; text-decoration: none; font-size: 13px; }
     .action-link:hover { text-decoration: underline; }

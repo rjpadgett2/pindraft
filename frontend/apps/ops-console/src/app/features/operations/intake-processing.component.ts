@@ -7,6 +7,7 @@ import { AuthService } from '@pindraft/auth';
 import {
   ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
   PageHeaderComponent, SelectComponent, SelectOption, SnackbarService,
+  StatusChipComponent,
 } from '@pindraft/ui';
 import { forkJoin } from 'rxjs';
 import { Pool, PoolsService } from '../pools/services/pools.service';
@@ -27,7 +28,7 @@ import { OperationsService } from './services/operations.service';
   imports: [
     FormsModule, RouterLink, DatePipe,
     ButtonComponent, CardComponent, KeyValueGridComponent, KvComponent,
-    PageHeaderComponent, SelectComponent,
+    PageHeaderComponent, SelectComponent, StatusChipComponent,
     IntakeFleeceTableComponent,
   ],
   template: `
@@ -41,7 +42,7 @@ import { OperationsService } from './services/operations.service';
           <div class="context-header">
             <strong>{{ customer()?.displayName ?? '—' }}</strong>
             @if (r.externalSource === 'hirsel') {
-              <span class="chip-hirsel">From Hirsel</span>
+              <pd-status-chip label="From Hirsel" tone="info" />
             }
           </div>
           <pd-key-value-grid>
@@ -77,7 +78,6 @@ import { OperationsService } from './services/operations.service';
     .back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--pd-color-link, #2563eb); text-decoration: none; }
     .context { margin: 16px 0 24px; }
     .context-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 16px; }
-    .chip-hirsel { font-size: 11px; padding: 2px 8px; background: var(--pd-color-info-bg, #dbeafe); color: var(--pd-color-info-text, #1e40af); border-radius: 4px; }
     .section { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--pd-color-text, #111); }
     .pool-select { display: block; max-width: 480px; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }

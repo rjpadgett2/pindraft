@@ -26,15 +26,18 @@ The canonical product and architecture spec is [`docs/Pindraft_Spec.md`](docs/Pi
 | API spec    | OpenAPI 3.1 via springdoc-openapi (code-first)                      |
 | Database    | Postgres 16 (managed Postgres in dev/prod; Supabase or equivalent)  |
 | Migrations  | Flyway                                                              |
-| Frontend    | Angular 21 (standalone, zoneless, signals), Material 21             |
+| Frontend    | Angular 21 (standalone, zoneless, signals), vanilla `@pindraft/ui`  |
 | Workspace   | Nx 21 with three Angular apps + four shared libs                    |
+| Design sys. | `libs/ui` — token-driven SCSS primitives (button, card, input, select, datepicker, checkbox, toggle, radio, icon, icon-button, status-chip, table, snackbar, …). No Angular Material. |
 | Test runner | Vitest (Angular), JUnit 5 + Testcontainers (backend)                |
 
 ## Three frontends
 
-- **ops-console** (`app.pindraft.co`) — what mill staff use. Onboarding, reservations, intake, lots, queues, scan stations, equipment runs, marketplace listings, wool pools, OAuth client registration.
-- **customer-portal** (`portal.pindraft.co`) — what shepherds use. View lots across mills, view pool memberships, toggle public trace visibility. Also serves the unauthenticated public marketplace, mill directory, and trace pages — and the OAuth consent screen.
+- **ops-console** (`app.pindraft.co`) — what mill staff use. Onboarding, reservations, intake, lots, queues, scan stations, equipment runs, marketplace listings, wool pools, customer roster (with link-to-user + claim-code generation), OAuth client registration.
+- **customer-portal** (`portal.pindraft.co`) — what shepherds use. View lots across mills, view pool memberships, toggle public trace visibility, redeem claim codes to attach mill-side records to their account. Also serves the unauthenticated public marketplace, mill directory, and trace pages — and the OAuth consent screen.
 - **shearer-pwa** (`shearer.pindraft.co`) — what shearers use on-farm. Offline-first PWA with IndexedDB outbox, service worker, idempotent sync.
+
+Each frontend has a distinct brand palette layered on the shared design tokens — slate-blue for ops-console (industrial), terracotta + cream for customer-portal (craft/warm), sage for shearer-pwa (outdoors/calm). The palette swap happens entirely through `--pd-brand-*` CSS custom properties; component code is identical across apps.
 
 ## Backend modules
 
@@ -116,7 +119,7 @@ A complete trip from animal to public provenance, exercising the platform:
 2. The mill operator intakes fiber via ops-console. The reservation becomes a lot; a trace record with a 6-char slug is emitted; the `shipment.received_at_mill` webhook fires back to Hirsel.
 3. The operator advances the lot through workflow stages. Each transition emits a trace segment and fires `lot.stage_transition`.
 4. Fiber completes processing. The operator creates a marketplace listing, attaching the lot's trace slug. On publish, `listing.published` fires.
-5. The shepherd logs into customer-portal, opens their lot detail, flips the trace visibility toggle to public.
+5. The shepherd logs into customer-portal, opens their lot detail, flips the trace visibility toggle to public. (If the shepherd registered *after* the mill recorded the walk-in, registration auto-linked their account by email match. If email didn't match, the operator generated a claim code from `/ops/customers` and the shepherd redeemed it at `/claim`.)
 6. A yarn shop owner browses `portal.pindraft.co/marketplace`, sees the listing with a verified-trace icon, clicks through to `/trace/{slug}`, reads the full provenance.
 
 ## Deployment

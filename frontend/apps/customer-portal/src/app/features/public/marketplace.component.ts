@@ -6,9 +6,8 @@ import { PublicHeaderComponent } from './public-header.component';
 
 /**
  * Public marketplace browse. Cream/terracotta palette matching the customer-portal
- * landing aesthetic — warm surfaces, kraft-paper feel, no Material card chrome.
- * Vanilla SCSS throughout; only Material dependency left is mat-icon for the
- * verified-trace badge (small footprint, worth keeping for the meaningful glyph).
+ * landing aesthetic — warm surfaces, kraft-paper feel. Vanilla SCSS throughout; the
+ * verified-trace badge uses pd-icon (inline SVG), so no Material dependency remains.
  */
 @Component({
   selector: 'customer-public-marketplace',
@@ -143,7 +142,7 @@ import { PublicHeaderComponent } from './public-header.component';
       text-transform: uppercase;
       font-weight: var(--pd-weight-medium);
     }
-    .mp-card__trace mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .mp-card__trace pd-icon { font-size: 14px; }
     .mp-card__body { padding: var(--pd-space-4) var(--pd-space-5) var(--pd-space-5); }
     .mp-card__title { margin: 0 0 var(--pd-space-2); font-size: var(--pd-text-md); line-height: var(--pd-leading-md); font-weight: var(--pd-weight-semibold); color: var(--pd-color-text); }
     .mp-card__mill { margin: 0 0 var(--pd-space-3); color: var(--pd-color-text-muted); font-size: var(--pd-text-sm); }

@@ -29,6 +29,14 @@ export type SelectSize = 'sm' | 'md' | 'lg';
  * Either pass {@code options} as an array OR use content projection with native
  * <option> children. The array form is convenient for static lists; projection
  * is better when options come from a query.
+ *
+ * Type note: the value type is `string` because {@link ControlValueAccessor}
+ * isn't generic. Binding `[(ngModel)]` to an enum-union variable
+ * (`PricingKind`, `ListingKind`, etc.) is fine in practice — the union types
+ * are string subtypes so assignment works in both directions and Angular's
+ * default template type-check is lenient enough not to warn. If you need
+ * stronger type guarantees, use {@code [ngModel]="value()"} +
+ * {@code (ngModelChange)="set($any($event))"} instead.
  */
 @Component({
   selector: 'pd-select',
