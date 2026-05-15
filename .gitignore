@@ -36,3 +36,8 @@ application-secrets.yml
 
 # Generated
 frontend/libs/api-client/src/lib/generated/
+
+# Working design document — implementation notes + open work. Not a published artifact;
+# the canonical product spec is docs/Pindraft_Spec.md and the architecture intro is
+# ARCHITECTURE.md. DESIGN.md is the scratchpad that fills the gap.
+DESIGN.md
